@@ -156,7 +156,17 @@ typedef enum
 	HRT_PROCESS,
 }hrt_state;
 
+extern void hart_rcv_msg(void);
+extern void hart_poll(void);
+extern void set_burst_mode(unsigned char burst_mode);
+extern void set_tx_addr_size(unsigned char addr_size);
+extern unsigned char get_xmt_msg_type(void);
+// extern unsigned char get_error_code(void);
 
+
+extern void set_data_link(void);
+extern void frame_cmd_data(unsigned char cmd,unsigned char *data, unsigned int cnt, \
+										void (*func)(unsigned char cmd,unsigned char *data));
 
 
 

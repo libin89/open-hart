@@ -23,6 +23,7 @@ typedef struct
 unsigned char polling_addr = 0; //short address
 long_addr_type long_addr = {0x1F,0x15,0x17,0x3E,0xE1};
 frame_type g_Rx, g_Tx;
+//unsigned char hrt_respose_code;
 
 #if 0
 /* address */
@@ -42,6 +43,7 @@ unsigned char g_PreambleNum = PREAMBLE_DEFAULT_NUM;
 unsigned char g_TxFrameType = LONG_ADDR_SIZE;
 #endif
 
+unsigned char BurstMode = FALSE;
 unsigned char g_Burst = FALSE;
 unsigned char g_Bt = 0;
 unsigned char g_Host = PRIMARY_MASTER;
@@ -63,12 +65,11 @@ static unsigned char s_RcvBufferPos;
 
 
 static unsigned char longitudinal_parity(unsigned char *data, unsigned int cnt);
-extern void hart_rcv_msg(void);
-extern void hart_poll(void);
-extern unsigned char is_burst_mode(unsigned char (*func)(void));
 static void hart_wait(void);
 static void hart_xmt_msg(unsigned char *data,unsigned int cnt);
 static unsigned char is_addr_match(void);
+static void hart_process(void);
+extern void set_preamble_num(unsigned char preamble_num);
 
 
 static unsigned char longitudinal_parity(unsigned char *data, unsigned int cnt)
@@ -83,7 +84,7 @@ static unsigned char longitudinal_parity(unsigned char *data, unsigned int cnt)
 	return check_byte;
 }
 
-void hart_poll(void)
+extern void hart_poll(void)
 {
 	hrt_state HartState;
 	rcv_msg_type RcvMsgType;
@@ -100,6 +101,7 @@ void hart_poll(void)
 		case HRT_XMT:
 			break;
 		case HRT_PROCESS:
+			hart_process( );
 			break;
 		default:
 			break;
@@ -107,19 +109,15 @@ void hart_poll(void)
 }
 
 /* func : implementation on the application layer */
-unsigned char is_burst_mode(unsigned char (*func)(void))
+extern void set_burst_mode( unsigned char burst_mode )
 {
-	if(func())
+	if(burst_mode)
 	{
-		g_Burst = TRUE;
-		set_delay_time(BT_TIMER,0); //bt = 0
-		g_Host = PRIMARY_MASTER;
-		return TRUE;
+		BurstMode = TRUE;
 	}
 	else
 	{
-		g_Burst = FALSE;
-		return FALSE;
+		BurstMode = FALSE;
 	}
 }
 
@@ -132,8 +130,16 @@ extern void set_tx_addr_size(unsigned char addr_size)
 {
 	g_Tx.address_size = addr_size;
 }
+extern unsigned char get_xmt_msg_type(void)
+{
+	return g_XmtMsgType;
+}
+// extern unsigned char get_error_code(void)
+// {
+// 	return hrt_respose_code;
+// }
 
-void set_data_link(void)
+extern void set_data_link(void)
 {
 	if(g_Tx.address_size != SHORT_ADDR_SIZE || \
 			g_Tx.address_size == LONG_ADDR_SIZE)
@@ -173,7 +179,7 @@ void set_data_link(void)
 	 
 */
 extern void frame_cmd_data(unsigned char cmd,unsigned char *data, unsigned int cnt, \
-										unsigned int (*func)(unsigned char cmd,unsigned char *data))
+										void (*func)(unsigned char cmd,unsigned char *data))
 {
 	if(g_Rx.address_size == LONG_ADDR_SIZE)
 	{
@@ -226,6 +232,17 @@ static void hart_wait(void)
 	unsigned char rcv_state;
 	
 	rcv_state = g_RcvState;
+	
+	if(BurstMode)
+	{
+		g_Burst = TRUE;
+		set_delay_time(BT_TIMER,0); //bt = 0
+		g_Host = PRIMARY_MASTER;
+	}
+	else
+	{
+		g_Burst = FALSE;
+	}
 	
 	if( g_Burst && (is_timeout_id(BT_TIMER)) )
 	{
@@ -411,6 +428,8 @@ static void hart_xmt_msg(unsigned char *data,unsigned int cnt)
 			}
 			break;
 		case XMT_DONE:
+			g_XmtState = XMT_INIT;
+			g_HartState = HRT_WAIT;
 			break;
 		default:
 			break;
@@ -422,7 +441,7 @@ extern void hart_appli_completed_notify(unsigned char flg)
 	g_AppliCompletedNotify = flg;
 }
 
-void hart_process(unsigned char (*hart_process_completed_notify(void)) )
+static void hart_process(void)
 {
 	unsigned int cnt;
 	
@@ -440,6 +459,7 @@ void hart_process(unsigned char (*hart_process_completed_notify(void)) )
 		else   //comm error
 		{
 			g_XmtMsgType = XMT_COMM_ERR;
+			//hrt_respose_code = HRT_LONGITUDINAL_PARITY_ERROR;
 		}
 	}
 	
@@ -448,7 +468,5 @@ void hart_process(unsigned char (*hart_process_completed_notify(void)) )
 		g_HartState = 	HRT_XMT;
 	}
 }
-
-
 
 
