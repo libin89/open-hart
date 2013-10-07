@@ -161,6 +161,8 @@ extern void hart_poll(void);
 extern void set_burst_mode(unsigned char burst_mode);
 extern void set_tx_addr_size(unsigned char addr_size);
 extern unsigned char get_xmt_msg_type(void);
+extern void set_preamble_num(unsigned char preamble_num);
+extern unsigned char get_preamble_num(void);
 // extern unsigned char get_error_code(void);
 
 

@@ -1,6 +1,7 @@
 #include "hart_frame.h"
 #include "hart_driver.h"
 #include "soft_timer.h"
+#include "wuhuan.h"
 
 typedef struct 
 {
@@ -21,7 +22,9 @@ typedef struct
 }long_addr_type;
 
 unsigned char polling_addr = 0; //short address
-long_addr_type long_addr = {0x1F,0x15,0x17,0x3E,0xE1};
+long_addr_type long_addr = {
+	MANUFACTURER_ID,DEVICE_TYPE,UNIQUE_DEVICE_ID0,UNIQUE_DEVICE_ID1,UNIQUE_DEVICE_ID2,
+	;
 frame_type g_Rx, g_Tx;
 //unsigned char hrt_respose_code;
 
@@ -69,7 +72,6 @@ static void hart_wait(void);
 static void hart_xmt_msg(unsigned char *data,unsigned int cnt);
 static unsigned char is_addr_match(void);
 static void hart_process(void);
-extern void set_preamble_num(unsigned char preamble_num);
 
 
 static unsigned char longitudinal_parity(unsigned char *data, unsigned int cnt)
@@ -122,6 +124,10 @@ extern void set_burst_mode( unsigned char burst_mode )
 }
 
 /* setup para */
+extern unsigned char get_preamble_num(void)
+{
+	return g_Tx.preamble_num;
+}
 extern void set_preamble_num(unsigned char preamble_num)
 {
 	g_Tx.preamble_num = preamble_num;
