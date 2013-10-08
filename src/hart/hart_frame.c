@@ -24,11 +24,11 @@ typedef struct
 unsigned char polling_addr = 0; //short address
 long_addr_type long_addr = {
 	MANUFACTURER_ID,DEVICE_TYPE,UNIQUE_DEVICE_ID0,UNIQUE_DEVICE_ID1,UNIQUE_DEVICE_ID2,
-	;
+};
 frame_type g_Rx, g_Tx;
 //unsigned char hrt_respose_code;
 
-#if 0
+#if 1
 /* address */
 unsigned char PollingAddr = 0;
 unsigned char ManufacturerId = 0x1F;
@@ -36,7 +36,7 @@ unsigned char DeviceType = 0x15;
 unsigned char UniqueDeviceId[3] = {0x17,0x3E,0xE1};
 #endif
 
-#if 0
+#if 1
 unsigned char g_RxDataBuf[50];
 unsigned char g_TxDataBuf[50];
 unsigned char g_FrameSize;
@@ -69,12 +69,12 @@ static unsigned char s_RcvBufferPos;
 
 static unsigned char longitudinal_parity(unsigned char *data, unsigned int cnt);
 static void hart_wait(void);
-static void hart_xmt_msg(unsigned char *data,unsigned int cnt);
+static void hart_xmt_msg(void);
 static unsigned char is_addr_match(void);
 static void hart_process(void);
 
 
-static unsigned char longitudinal_parity(unsigned char *data, unsigned int cnt)
+static unsigned char longitudinal_parity(unsigned char *data, unsigned int cnt)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
 {
 	unsigned char i;
 	unsigned char check_byte = 0x00;
@@ -184,23 +184,29 @@ extern void set_data_link(void)
 /* func : implementation on the application layer 
 	 
 */
-extern void frame_cmd_data(unsigned char cmd,unsigned char *data, unsigned int cnt, \
-										void (*func)(unsigned char cmd,unsigned char *data))
+extern void frame_cmd_data(unsigned int (*func)(unsigned char cmd,unsigned char *data))
 {
+	unsigned char cmd;
+	unsigned char *data;
+	
 	if(g_Rx.address_size == LONG_ADDR_SIZE)
 	{
 		cmd = g_Rx.data_buf[HRT_LONGF_CMD_OFF];
-		data = &g_Rx.data_buf[HRT_LONGF_REQDATA_OFF];
+		data = &g_Tx.data_buf[HRT_LONGF_REQDATA_OFF];
+		
+		g_Tx.data_buf[HRT_LONGF_CMD_OFF] = cmd;
+		g_Tx.byte_count = func(cmd,data);
+		g_Tx.data_buf[HRT_LONGF_LEN_OFF] = g_Tx.byte_count;
 	}
 	else
 	{
 		cmd = g_Rx.data_buf[HRT_SHORTF_CMD_OFF];
-		data = &g_Rx.data_buf[HRT_SHORTF_REQDATA_OFF];
+		data = &g_Tx.data_buf[HRT_SHORTF_REQDATA_OFF];
+		
+		g_Tx.data_buf[HRT_SHORTF_CMD_OFF] = cmd;
+		g_Tx.byte_count = func(cmd,data);
+		g_Tx.data_buf[HRT_LONGF_LEN_OFF] = g_Tx.byte_count;
 	}
-// 	g_Rx.cmd = cmd;
-	func(cmd,data);
-	g_Tx.byte_count = cnt;
-	
 }
 
 static unsigned char is_addr_match(void)
@@ -409,11 +415,15 @@ void hart_rcv_msg(void)
 	}
 }
 
-static void hart_xmt_msg(unsigned char *data,unsigned int cnt)
+static void hart_xmt_msg(void)
 {
 	tsm_state XmtState = XMT_INIT;
-	
+	unsigned char i = 0;
+	unsigned char *data;
+	unsigned int cnt;
+
 	XmtState = g_XmtState;
+	cnt = g_Tx.address_size + 3 + g_Tx.byte_count + 1;
 	switch(XmtState)
 	{
 		case XMT_INIT:
@@ -421,13 +431,21 @@ static void hart_xmt_msg(unsigned char *data,unsigned int cnt)
 			g_XmtState = XMT_WRITE;
 			break;
 		case XMT_WRITE:
+			for(i = 0;i < g_Tx.preamble_num;i++)
+			{
+				*data = 0xFF;
+				serical_put_byte(data);
+			}
 			switch(g_XmtMsgType)
 			{
 				case XMT_BACK:
 					break;
 				case XMT_ACK:
-					break;
 				case XMT_COMM_ERR:
+					for(i = 0;i < cnt;i++)
+					{
+						serical_put_byte(g_Tx.data_buf);
+					}
 					break;
 				default:
 					break;
@@ -436,6 +454,7 @@ static void hart_xmt_msg(unsigned char *data,unsigned int cnt)
 		case XMT_DONE:
 			g_XmtState = XMT_INIT;
 			g_HartState = HRT_WAIT;
+		  serical_enable(TRUE,FALSE);
 			break;
 		default:
 			break;
@@ -471,7 +490,9 @@ static void hart_process(void)
 	
 	if(g_AppliCompletedNotify)
 	{
-		g_HartState = 	HRT_XMT;
+		cnt = g_Tx.address_size + 3 + g_Tx.byte_count;
+		g_Tx.data_buf[cnt] = longitudinal_parity(g_Tx.data_buf,cnt);
+		g_HartState = HRT_XMT;
 	}
 }
 

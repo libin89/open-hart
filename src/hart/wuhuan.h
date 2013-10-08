@@ -1,9 +1,9 @@
 #ifndef _WUHUAN_H
 #define _WUHUAN_H
 
-const unsigned char manufacturer_id;
-const unsigned char device_type;
-const unsigned char unique_device_id[3];
+// const unsigned char manufacturer_id;
+// const unsigned char device_type;
+// const unsigned char unique_device_id[3];
 
 #define MANUFACTURER_ID  0xFA
 #define DEVICE_TYPE      0x15
