@@ -123,6 +123,22 @@ extern void set_burst_mode( unsigned char burst_mode )
 	}
 }
 
+/* get a pointer to rx_data_buf */
+extern unsigned char *get_rx_data_pointer(void)
+{
+	unsigned char *data;
+	
+	if(g_Rx.address_size == LONG_ADDR_SIZE)
+	{
+		data = &g_Rx.data_buf[HRT_LONGF_REQDATA_OFF];
+	}
+	else
+	{
+		data = &g_Rx.data_buf[HRT_SHORTF_REQDATA_OFF];
+	}
+	return data;
+}
+
 /* setup para */
 extern unsigned char get_preamble_num(void)
 {
@@ -192,7 +208,7 @@ extern void frame_cmd_data(unsigned int (*func)(unsigned char cmd,unsigned char 
 	if(g_Rx.address_size == LONG_ADDR_SIZE)
 	{
 		cmd = g_Rx.data_buf[HRT_LONGF_CMD_OFF];
-		data = &g_Tx.data_buf[HRT_LONGF_REQDATA_OFF];
+		data = &g_Tx.data_buf[HRT_LONGF_RSPCODE1_OFF];
 		
 		g_Tx.data_buf[HRT_LONGF_CMD_OFF] = cmd;
 		g_Tx.byte_count = func(cmd,data);
@@ -201,7 +217,7 @@ extern void frame_cmd_data(unsigned int (*func)(unsigned char cmd,unsigned char 
 	else
 	{
 		cmd = g_Rx.data_buf[HRT_SHORTF_CMD_OFF];
-		data = &g_Tx.data_buf[HRT_SHORTF_REQDATA_OFF];
+		data = &g_Tx.data_buf[HRT_SHORTF_RSPCODE1_OFF];
 		
 		g_Tx.data_buf[HRT_SHORTF_CMD_OFF] = cmd;
 		g_Tx.byte_count = func(cmd,data);

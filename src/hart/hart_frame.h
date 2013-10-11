@@ -165,6 +165,7 @@ extern void set_preamble_num(unsigned char preamble_num);
 extern unsigned char get_preamble_num(void);
 extern unsigned char get_preamble_num(void);
 extern unsigned char get_xmt_msg_type(void);
+extern unsigned char *get_rx_data_pointer(void);
 // extern unsigned char get_error_code(void);
 
 

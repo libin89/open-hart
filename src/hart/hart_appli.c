@@ -31,7 +31,16 @@ void set_ID(unsigned char *data)
 	//the 12th data byte?
 }
 
-void C0_RdUniqueId(unsigned char *data)
+static void float_to_data(unsigned char *data,float *tmp)
+{
+	data[HrtByteCnt++] = *((unsigned char *)tmp);
+	data[HrtByteCnt++] = *((unsigned char *)tmp+1);
+	data[HrtByteCnt++] = *((unsigned char *)tmp+2);
+	data[HrtByteCnt++] = *((unsigned char *)tmp+3);
+}
+
+/* the same as C11 */
+void C0_RdUniqueId(unsigned char *data) 
 {
 	set_respose_code(data);
 	if(!HrtResposeCode)
@@ -42,10 +51,174 @@ void C0_RdUniqueId(unsigned char *data)
 
 void C1_RdPV(unsigned char *data)
 {
+	float tmp;
+	
+	tmp = get_pv();
 	set_respose_code(data);
 	if(!HrtResposeCode)
 	{
-		
+		data[HrtByteCnt++] = PV_UNIT;
+		float_to_data(data,&tmp);
+	}
+}
+
+void C2_RdLoopCurrPerOfRange(unsigned char *data)
+{
+	float tmp1,tmp2;
+	
+	tmp1 = get_loop_current();
+	tmp2 = get_percent_of_range();
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		float_to_data(data,&tmp1);
+		float_to_data(data,&tmp2);
+	}
+}
+
+void C3_RdDVLoopCurr(unsigned char *data)
+{
+	float tmp1,tmp2,tmp3,tmp4,tmp5;
+	
+	tmp1 = get_loop_current();
+	tmp2 = get_pv();
+	tmp3 = get_sv();
+	tmp4 = get_tv();
+	tmp5 = get_qv();
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		float_to_data(data,&tmp1);
+		data[HrtByteCnt++] = PV_UNIT;
+		float_to_data(data,&tmp2);
+		data[HrtByteCnt++] = SV_UNIT;
+		float_to_data(data,&tmp3);
+		data[HrtByteCnt++] = TV_UNIT;
+		float_to_data(data,&tmp4);
+		data[HrtByteCnt++] = QV_UNIT;	
+		float_to_data(data,&tmp5);
+	}
+}
+
+void C6_WrPollingAddr(unsigned char *data)
+{
+	unsigned char *dat;
+	
+	dat = get_rx_data_pointer();
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		data[HrtByteCnt++] = *dat;
+		data[HrtByteCnt++] = *(dat+1);
+	}
+	set_polling_addr(*dat);
+	set_loop_current_mode(*(dat+1));
+}
+
+void C7_RdLoopConfiguration(unsigned char *data)
+{
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		data[HrtByteCnt++] = get_polling_addr();
+		data[HrtByteCnt++] = get_loop_current_mode();
+	}
+}
+
+void C8_RdDVClass(unsigned char *data)
+{
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		data[HrtByteCnt++] = PV_CLASS;
+		data[HrtByteCnt++] = SV_CLASS;
+		data[HrtByteCnt++] = TV_CLASS;
+		data[HrtByteCnt++] = QV_CLASS;
+	}
+}
+
+/* message type : packed */
+void C12_RdMessage(unsigned char *data) 
+{
+	unsigned char i = 0;
+	unsigned char *dat;
+	
+	dat = get_message();
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+			for(i = 0;i < 24;i++)
+			{
+				data[HrtByteCnt++] = *(dat+i);
+			}
+	}
+}
+
+void C13_RdTagDescriptorDate(unsigned char *data)
+{
+	unsigned char i = 0;
+	unsigned char *dat1, *dat2, *dat3;
+	
+	dat1 = get_tag();
+	dat2 = get_descriptor();
+	dat3 = get_date();
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		for(i = 0;i < 6;i++)
+		{
+			data[HrtByteCnt++] = *(dat1+i);
+		}
+		for(i = 0;i < 12;i++)
+		{
+			data[HrtByteCnt++] = *(dat2+i);
+		}
+		for(i = 0;i < 3;i++)
+		{
+			data[HrtByteCnt++] = *(dat3+i);
+		}
+	}
+}
+
+void C14_RdPVTransducerInfo(unsigned char *data)
+{
+	unsigned char i = 0;
+	unsigned char *dat;
+	
+	dat = get_transducer_serial_num();
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		for(i = 0;i < 3;i++)
+		{
+			data[HrtByteCnt++] = *(dat+i);
+		}
+		data[HrtByteCnt++] = PV_UNIT;
+		data[HrtByteCnt++] = get_transducer_upper();
+		data[HrtByteCnt++] = get_transducer_lower();
+		data[HrtByteCnt++] = get_pv_min_span();
+	}
+}
+
+void C15_RdDeviceInfo(unsigned char *data)
+{
+	float tmp1,tmp2,tmp3;
+	
+	tmp1 = get_pv_upper_range();
+	tmp2 = get_pv_lower_range();
+	tmp3 = get_pv_damping_time();
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		data[HrtByteCnt++] = get_alarm_sw();
+		data[HrtByteCnt++] = get_transfer_func();
+		data[HrtByteCnt++] = PV_UNIT;
+		float_to_data(data,&tmp1);
+		float_to_data(data,&tmp2);
+		float_to_data(data,&tmp3);
+		data[HrtByteCnt++] = get_protect();
+		data[HrtByteCnt++] = 250;
+		data[HrtByteCnt++] = get_analog_channel();
 	}
 }
 
