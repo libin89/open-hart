@@ -12,10 +12,11 @@
 #define UNIQUE_DEVICE_ID2 0xE1
 
 enum {
-	PV_UNIT,
 	SV_UNIT,
 	TV_UNIT,
 	QV_UNIT,
+	PERCENT_UNIT = 57, // %
+	CURRENT_UNIT = 39, // mA
 	PV_CLASS,  //table 21
 	SV_CLASS,
 	TV_CLASS,
@@ -28,6 +29,18 @@ enum {
 	SV_CODE,
 	TV_CODE,
 	QV_CODE,
+};
+
+enum pv_unit{
+	G_S = 22,
+	G_M = 16,
+	G_H = 136,
+	M3_S = 28,
+	M3_M = 131,
+	M3_H = 19,
+	L_S = 24,
+	L_M = 17,
+	L_H = 138,
 };
 
 enum alarm{
@@ -51,6 +64,10 @@ enum analog_channel{
 	CHANNEL_FLAG = 0x01,
 };
 
+typedef void (*PerformSelfTest)(void);
+typedef void (*PerformDeviceReset)(void);
+typedef void (*TrimLoopCurrent)(void *data);
+
 /* DV */
 extern void  set_pv(float pv);
 extern float get_pv(void);
@@ -65,6 +82,12 @@ extern void  set_loop_current(float current);
 extern float get_loop_current(void);
 extern void  set_percent_of_range(float percent_of_range);
 extern float get_percent_of_range(void);
+/* fixed current mode */
+extern void set_fixed_current(float fixed_current);
+extern float get_fixed_current(void);
+/* upper/lower range unit */
+extern void set_ul_range_unit(unsigned char ul_range_unit);
+extern unsigned char get_ul_range_unit(void);
 /* polling address and loop current mode */
 extern void set_polling_addr(unsigned char polling_addr);
 extern unsigned char get_polling_addr(void); 
@@ -107,5 +130,34 @@ extern enum analog_channel get_analog_channel(void);
 /* final assembly number */
 extern void set_final_assembly_num(unsigned char *fan);
 extern unsigned char *get_final_assembly_num(void);
+/* perform self test */
+extern void set_perform_self_test_ptr(void *func);
+extern void *get_perform_self_test_ptr(void);
+/* perform device reset */
+extern void set_perform_device_reset_ptr(void *func);
+extern void *get_perform_device_reset_ptr(void);
+/* PV zero */
+extern void set_pv_zero(float pv_zero);
+extern float get_pv_zero(void);
+/* PV unit */
+extern void set_pv_unit(unsigned char pv_unit);
+extern unsigned char get_pv_unit(void);
+// /* externally trim current zero */
+// extern void set_ext_zero_current(float ext_zero_curr);
+// extern float get_ext_zero_current(void);
+/* actual trim current zero */
+extern void set_act_zero_current(float act_zero_curr);
+extern float get_act_zero_current(void);
+// /* externally trim current gain */
+// extern void set_ext_gain_current(float ext_gain_current);
+// extern float get_ext_gain_current(void);
+/* actual trim current gain */
+extern void set_act_gain_current(float act_gain_current);
+extern float get_act_gain_current(void);
+/* loop current trim function pointer */
+extern void set_zero_trim_ptr(void *func);
+extern void *get_zero_trim_ptr(void);
+extern void set_gain_trim_ptr(void *func);
+extern void *get_gain_trim_ptr(void);
 
 #endif

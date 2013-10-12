@@ -39,6 +39,21 @@ static void float_to_data(unsigned char *data,float *tmp)
 	data[HrtByteCnt++] = *((unsigned char *)tmp+3);
 }
 
+static float data_to_float(unsigned char *tmp)
+{
+	union {
+		float tmp_f;
+		unsigned char buf[4];
+	}U;
+	unsigned char i;
+	
+	for(i = 0;i < 4;i++)
+	{
+		U.buf[i] = *(tmp+i);
+	}
+	return U.tmp_f;
+}
+
 /* the same as C11 */
 void C0_RdUniqueId(unsigned char *data) 
 {
@@ -51,12 +66,12 @@ void C0_RdUniqueId(unsigned char *data)
 
 void C1_RdPV(unsigned char *data)
 {
-	float tmp;
+	float tmp;	
 	
-	tmp = get_pv();
 	set_respose_code(data);
 	if(!HrtResposeCode)
 	{
+		tmp = get_pv();
 		data[HrtByteCnt++] = PV_UNIT;
 		float_to_data(data,&tmp);
 	}
@@ -66,11 +81,11 @@ void C2_RdLoopCurrPerOfRange(unsigned char *data)
 {
 	float tmp1,tmp2;
 	
-	tmp1 = get_loop_current();
-	tmp2 = get_percent_of_range();
 	set_respose_code(data);
 	if(!HrtResposeCode)
 	{
+		tmp1 = get_loop_current();
+		tmp2 = get_percent_of_range();
 		float_to_data(data,&tmp1);
 		float_to_data(data,&tmp2);
 	}
@@ -80,14 +95,14 @@ void C3_RdDVLoopCurr(unsigned char *data)
 {
 	float tmp1,tmp2,tmp3,tmp4,tmp5;
 	
-	tmp1 = get_loop_current();
-	tmp2 = get_pv();
-	tmp3 = get_sv();
-	tmp4 = get_tv();
-	tmp5 = get_qv();
 	set_respose_code(data);
 	if(!HrtResposeCode)
 	{
+		tmp1 = get_loop_current();
+		tmp2 = get_pv();
+		tmp3 = get_sv();
+		tmp4 = get_tv();
+		tmp5 = get_qv();
 		float_to_data(data,&tmp1);
 		data[HrtByteCnt++] = PV_UNIT;
 		float_to_data(data,&tmp2);
@@ -104,15 +119,16 @@ void C6_WrPollingAddr(unsigned char *data)
 {
 	unsigned char *dat;
 	
-	dat = get_rx_data_pointer();
 	set_respose_code(data);
 	if(!HrtResposeCode)
 	{
+		dat = get_rx_data_pointer();
 		data[HrtByteCnt++] = *dat;
 		data[HrtByteCnt++] = *(dat+1);
+		set_polling_addr(*dat);
+		set_loop_current_mode(*(dat+1));
 	}
-	set_polling_addr(*dat);
-	set_loop_current_mode(*(dat+1));
+	
 }
 
 void C7_RdLoopConfiguration(unsigned char *data)
@@ -141,30 +157,30 @@ void C8_RdDVClass(unsigned char *data)
 void C12_RdMessage(unsigned char *data) 
 {
 	unsigned char i = 0;
-	unsigned char *dat;
+	unsigned char *dat;	
 	
-	dat = get_message();
 	set_respose_code(data);
 	if(!HrtResposeCode)
 	{
-			for(i = 0;i < 24;i++)
-			{
-				data[HrtByteCnt++] = *(dat+i);
-			}
+		dat = get_message();
+		for(i = 0;i < 24;i++)
+		{
+			data[HrtByteCnt++] = *(dat+i);
+		}
 	}
 }
 
 void C13_RdTagDescriptorDate(unsigned char *data)
 {
 	unsigned char i = 0;
-	unsigned char *dat1, *dat2, *dat3;
+	unsigned char *dat1, *dat2, *dat3;	
 	
-	dat1 = get_tag();
-	dat2 = get_descriptor();
-	dat3 = get_date();
 	set_respose_code(data);
 	if(!HrtResposeCode)
 	{
+		dat1 = get_tag();
+		dat2 = get_descriptor();
+		dat3 = get_date();
 		for(i = 0;i < 6;i++)
 		{
 			data[HrtByteCnt++] = *(dat1+i);
@@ -183,12 +199,12 @@ void C13_RdTagDescriptorDate(unsigned char *data)
 void C14_RdPVTransducerInfo(unsigned char *data)
 {
 	unsigned char i = 0;
-	unsigned char *dat;
+	unsigned char *dat;	
 	
-	dat = get_transducer_serial_num();
 	set_respose_code(data);
 	if(!HrtResposeCode)
 	{
+		dat = get_transducer_serial_num();
 		for(i = 0;i < 3;i++)
 		{
 			data[HrtByteCnt++] = *(dat+i);
@@ -202,23 +218,338 @@ void C14_RdPVTransducerInfo(unsigned char *data)
 
 void C15_RdDeviceInfo(unsigned char *data)
 {
-	float tmp1,tmp2,tmp3;
+	float tmp1,tmp2,tmp3;	
 	
-	tmp1 = get_pv_upper_range();
-	tmp2 = get_pv_lower_range();
-	tmp3 = get_pv_damping_time();
 	set_respose_code(data);
 	if(!HrtResposeCode)
 	{
+		tmp1 = get_pv_upper_range();
+		tmp2 = get_pv_lower_range();
+		tmp3 = get_pv_damping_time();
 		data[HrtByteCnt++] = get_alarm_sw();
 		data[HrtByteCnt++] = get_transfer_func();
-		data[HrtByteCnt++] = PV_UNIT;
+		data[HrtByteCnt++] = get_ul_range_unit();
 		float_to_data(data,&tmp1);
 		float_to_data(data,&tmp2);
 		float_to_data(data,&tmp3);
 		data[HrtByteCnt++] = get_protect();
 		data[HrtByteCnt++] = 250;
 		data[HrtByteCnt++] = get_analog_channel();
+	}
+}
+
+void C16_RdFinalAssemblyNum(unsigned char *data)
+{
+	unsigned char *dat;
+	unsigned char i;	
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		dat = get_final_assembly_num();
+		for(i = 0;i < 3;i++)
+		{
+			data[HrtByteCnt++] = *(dat+i);
+		}
+	}
+}
+
+void C17_WrMessage(unsigned char *data)
+{
+	unsigned char *dat;
+	unsigned char i;	
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		dat = get_rx_data_pointer();
+		for(i = 0;i < 24;i++)
+		{
+			data[HrtByteCnt++] = *(dat+i);
+		}
+		set_message(dat);
+	}
+	
+}
+
+void C18_WrTagDescriptorDate(unsigned char *data)
+{
+	unsigned char *dat;
+	unsigned char i;	
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		dat = get_rx_data_pointer();
+		for(i = 0;i < 21;i++)
+		{
+			data[HrtByteCnt++] = *(dat+i);
+		}
+		set_tag(dat);
+		set_descriptor(dat+6);
+		set_date(dat+18);
+	}
+	
+}
+
+void C19_WrFinalAssemblyNum(unsigned char *data)
+{
+	unsigned char *dat;
+	unsigned char i;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		dat = get_rx_data_pointer();
+		for(i = 0;i < 3;i++)
+		{
+			data[HrtByteCnt++] = *(dat+i);
+		}
+		set_final_assembly_num(dat);
+	}
+	
+}
+
+void C33_RdDeviceVariable(unsigned char *data)
+{
+	unsigned char *dat;
+	unsigned char i;
+	float tmp;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		dat = get_rx_data_pointer();
+		for(i = 0;i < 4;i++)
+		{
+			switch(*(dat+i))
+			{
+				case PERCENT_RANGE:
+					data[HrtByteCnt++] = *(dat+i);
+					data[HrtByteCnt++] = PERCENT_UNIT;
+					tmp = get_percent_of_range();
+					float_to_data(data,&tmp);
+					break;
+				case LOOP_CURRENT:
+					data[HrtByteCnt++] = *(dat+i);
+					data[HrtByteCnt++] = CURRENT_UNIT;
+					tmp = get_loop_current();
+					float_to_data(data,&tmp);
+					break;
+				case PV_CODE:
+					data[HrtByteCnt++] = *(dat+i);
+					data[HrtByteCnt++] = PV_UNIT;
+					tmp = get_pv();
+					float_to_data(data,&tmp);
+					break;
+				case SV_CODE:
+					data[HrtByteCnt++] = *(dat+i);
+					data[HrtByteCnt++] = SV_UNIT;
+					tmp = get_sv();
+					float_to_data(data,&tmp);
+					break;
+				case TV_CODE:
+					data[HrtByteCnt++] = *(dat+i);
+					data[HrtByteCnt++] = TV_UNIT;
+					tmp = get_tv();
+					float_to_data(data,&tmp);
+					break;
+				case QV_CODE:
+					data[HrtByteCnt++] = *(dat+i);
+					data[HrtByteCnt++] = QV_UNIT;
+					tmp = get_qv();
+					float_to_data(data,&tmp);
+					break;
+				default:
+					data[HrtByteCnt++] = *(dat+i);
+					data[HrtByteCnt++] = 250;   //not used
+					data[HrtByteCnt++] = 0x7F;
+					data[HrtByteCnt++] = 0xA0;
+					data[HrtByteCnt++] = 0x00;
+					data[HrtByteCnt++] = 0x00;
+					break;
+			}
+		}
+	}
+}
+
+void C34_WrPVDamping(unsigned char *data)
+{
+	unsigned char *dat;
+	float tmp;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		dat = get_rx_data_pointer();
+		tmp = data_to_float(dat);
+		float_to_data(data,&tmp);
+		set_pv_damping_time(tmp);
+	}
+	
+}
+
+void C35_WrPVRange(unsigned char *data)
+{
+	unsigned char *dat;
+	float tmp1,tmp2;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		dat = get_rx_data_pointer();
+		tmp1 = data_to_float(dat+1);
+		tmp2 = data_to_float(dat+5);
+		data[HrtByteCnt++] = *dat;		
+		float_to_data(data,&tmp1);	
+		float_to_data(data,&tmp2);	
+		set_ul_range_unit(*dat);
+		set_pv_upper_range(tmp1);
+		set_pv_lower_range(tmp2);
+	}
+	
+}
+
+void C36_SetPVUpperRange(unsigned char *data)
+{
+	float tmp;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		tmp = get_pv();
+		set_pv_upper_range(tmp);
+	}	
+}
+
+void C37_SetPVLowerRange(unsigned char *data)
+{
+	float tmp;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		tmp = get_pv();
+		set_pv_lower_range(tmp);
+	}
+}
+
+void C40_EnterOrExitFixedCurrent(unsigned char *data)
+{
+	float tmp;
+	unsigned char *dat;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		tmp = get_loop_current();
+		float_to_data(data,&tmp);
+		dat = get_rx_data_pointer();
+		tmp = data_to_float(dat);
+		set_fixed_current(tmp);
+	}
+}
+
+void C41_PerformSelfTest(unsigned char *data)
+{
+	PerformSelfTest func;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		func = (PerformSelfTest)get_perform_self_test_ptr();
+		func();
+	}
+}
+
+void C42_PerformDeviceReset(unsigned char *data)
+{
+	PerformDeviceReset func;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		func = (PerformDeviceReset)get_perform_device_reset_ptr();
+		func();
+	}
+}
+
+void C43_PVZero(unsigned char *data)
+{
+	float tmp;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		tmp = get_pv();
+		set_pv_zero(tmp);
+	}
+}
+
+void C44_WrPVUnit(unsigned char *data)
+{
+	unsigned char *dat;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		dat = get_rx_data_pointer();
+		data[HrtByteCnt++] = *dat;
+		set_pv_unit(*dat);
+	}
+}
+
+void C45_TrimLoopCurrentZero(unsigned char *data)
+{
+	unsigned char *dat;
+	float tmp;
+	TrimLoopCurrent func;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		tmp = get_fixed_current();
+		if((tmp>=3.0) && (tmp<=5.0))           //enter fixed current mode
+		{
+			dat = get_rx_data_pointer();
+			tmp = data_to_float(dat);
+			func = (TrimLoopCurrent)get_zero_trim_ptr();
+			func(&tmp);
+			tmp = get_act_zero_current();
+			float_to_data(data,&tmp);	
+		}
+		else
+		{
+			tmp = 9.0f;
+			float_to_data(data,&tmp);
+		}
+	}
+}
+
+void C46_TrimLoopCurrentGain(unsigned char *data)
+{
+	unsigned char *dat;
+	float tmp;
+	TrimLoopCurrent func;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		tmp = get_fixed_current();
+		if((tmp>=19.0) && (tmp<=21.0))           //enter fixed current mode
+		{
+			dat = get_rx_data_pointer();
+			tmp = data_to_float(dat);
+			func = (TrimLoopCurrent)get_gain_trim_ptr();
+			func(&tmp);
+			tmp = get_act_gain_current();
+			float_to_data(data,&tmp);	
+		}
+		else
+		{
+			tmp = 9.0f;
+			float_to_data(data,&tmp);
+		}
 	}
 }
 
