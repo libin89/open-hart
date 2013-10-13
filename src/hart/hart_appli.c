@@ -72,7 +72,7 @@ void C1_RdPV(unsigned char *data)
 	if(!HrtResposeCode)
 	{
 		tmp = get_pv();
-		data[HrtByteCnt++] = PV_UNIT;
+		data[HrtByteCnt++] = get_pv_unit();
 		float_to_data(data,&tmp);
 	}
 }
@@ -104,13 +104,13 @@ void C3_RdDVLoopCurr(unsigned char *data)
 		tmp4 = get_tv();
 		tmp5 = get_qv();
 		float_to_data(data,&tmp1);
-		data[HrtByteCnt++] = PV_UNIT;
+		data[HrtByteCnt++] = get_pv_unit();
 		float_to_data(data,&tmp2);
-		data[HrtByteCnt++] = SV_UNIT;
+		data[HrtByteCnt++] = get_sv_unit();
 		float_to_data(data,&tmp3);
-		data[HrtByteCnt++] = TV_UNIT;
+		data[HrtByteCnt++] = get_tv_unit();
 		float_to_data(data,&tmp4);
-		data[HrtByteCnt++] = QV_UNIT;	
+		data[HrtByteCnt++] = get_qv_unit();	
 		float_to_data(data,&tmp5);
 	}
 }
@@ -209,7 +209,7 @@ void C14_RdPVTransducerInfo(unsigned char *data)
 		{
 			data[HrtByteCnt++] = *(dat+i);
 		}
-		data[HrtByteCnt++] = PV_UNIT;
+		data[HrtByteCnt++] = get_pv_unit();
 		data[HrtByteCnt++] = get_transducer_upper();
 		data[HrtByteCnt++] = get_transducer_lower();
 		data[HrtByteCnt++] = get_pv_min_span();
@@ -338,25 +338,25 @@ void C33_RdDeviceVariable(unsigned char *data)
 					break;
 				case PV_CODE:
 					data[HrtByteCnt++] = *(dat+i);
-					data[HrtByteCnt++] = PV_UNIT;
+					data[HrtByteCnt++] = get_pv_unit();
 					tmp = get_pv();
 					float_to_data(data,&tmp);
 					break;
 				case SV_CODE:
 					data[HrtByteCnt++] = *(dat+i);
-					data[HrtByteCnt++] = SV_UNIT;
+					data[HrtByteCnt++] = get_sv_unit();
 					tmp = get_sv();
 					float_to_data(data,&tmp);
 					break;
 				case TV_CODE:
 					data[HrtByteCnt++] = *(dat+i);
-					data[HrtByteCnt++] = TV_UNIT;
+					data[HrtByteCnt++] = get_tv_unit();
 					tmp = get_tv();
 					float_to_data(data,&tmp);
 					break;
 				case QV_CODE:
 					data[HrtByteCnt++] = *(dat+i);
-					data[HrtByteCnt++] = QV_UNIT;
+					data[HrtByteCnt++] = get_qv_unit();
 					tmp = get_qv();
 					float_to_data(data,&tmp);
 					break;
@@ -553,14 +553,112 @@ void C46_TrimLoopCurrentGain(unsigned char *data)
 	}
 }
 
+void C47_WrPVTransferFunction(unsigned char *data)
+{
+	unsigned char *dat;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		dat = get_rx_data_pointer();
+		data[HrtByteCnt++] = *dat;
+		set_transfer_func(*dat);
+	}
+}
+
+void C49_WrPVTransducerSerialNum(unsigned char *data)
+{
+	unsigned char *dat;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		dat = get_rx_data_pointer();
+		data[HrtByteCnt++] = *dat;
+		data[HrtByteCnt++] = *(dat+1);
+		data[HrtByteCnt++] = *(dat+2);
+		set_transducer_serial_num(dat);
+	}
+}
+
+void C50_RdDVAssignments(unsigned char *data)
+{
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		data[HrtByteCnt++] = get_pv_code();
+		data[HrtByteCnt++] = get_sv_code();
+		data[HrtByteCnt++] = get_tv_code();
+		data[HrtByteCnt++] = get_qv_code();
+	}
+}
+
+void C51_WrDVAssignments(unsigned char *data)
+{
+	unsigned char *dat;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		dat = get_rx_data_pointer();
+		data[HrtByteCnt++] = *dat;
+		data[HrtByteCnt++] = *(dat+1);
+		data[HrtByteCnt++] = *(dat+2);
+		data[HrtByteCnt++] = *(dat+3);
+		set_pv_code(*dat);
+		set_sv_code(*(dat+1));
+		set_tv_code(*(dat+2));
+		set_qv_code(*(dat+3));
+	}
+}
+
+void C59_WrNumOfResposePreambles(unsigned char *data)
+{
+	unsigned char *dat;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		dat = get_rx_data_pointer();
+		data[HrtByteCnt++] = *dat;
+		set_response_preamble_num(*dat);
+	}
+}
+
+void C108_WrBurstModeCmdNum(unsigned char *data) //command 1,2,3,9 should be supported by all devices
+{
+	unsigned char *dat;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		dat = get_rx_data_pointer();
+		data[HrtByteCnt++] = *dat;
+		set_burst_mode_cmd_num(*dat);
+	}
+}
+
+void C109_BurstModeControl(unsigned char *data)
+{
+	unsigned char *dat;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		dat = get_rx_data_pointer();
+		data[HrtByteCnt++] = *dat;
+		set_burst_mode_code(*dat);
+	}
+}
+
 unsigned int cmd_function(unsigned char cmd,unsigned char *data)
 {
 	switch(cmd)
 	{
 		case 0: command = C0_RdUniqueId;		break;
 		case 1:	command = C1_RdPV;	  break;
-		case 2:			break;
-		case 3:			break;
+		case 2:	command = C2_RdLoopCurrPerOfRange;		break;
+		case 3:	command = C3_RdDVLoopCurr;		break;
 		case 4:			break;
 		case 5:			break;
 		case 6:			break;
@@ -611,6 +709,7 @@ void hart_appli_init(void)
 void hart_appli_poll(void)
 {
 	frame_cmd_data(cmd_function);
+	
 }
 
 

@@ -28,7 +28,7 @@ long_addr_type long_addr = {
 frame_type g_Rx, g_Tx;
 //unsigned char hrt_respose_code;
 
-#if 1
+#if 0
 /* address */
 unsigned char PollingAddr = 0;
 unsigned char ManufacturerId = 0x1F;
@@ -36,7 +36,7 @@ unsigned char DeviceType = 0x15;
 unsigned char UniqueDeviceId[3] = {0x17,0x3E,0xE1};
 #endif
 
-#if 1
+#if 0
 unsigned char g_RxDataBuf[50];
 unsigned char g_TxDataBuf[50];
 unsigned char g_FrameSize;

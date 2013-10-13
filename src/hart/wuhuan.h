@@ -12,9 +12,6 @@
 #define UNIQUE_DEVICE_ID2 0xE1
 
 enum {
-	SV_UNIT,
-	TV_UNIT,
-	QV_UNIT,
 	PERCENT_UNIT = 57, // %
 	CURRENT_UNIT = 39, // mA
 	PV_CLASS,  //table 21
@@ -58,6 +55,11 @@ enum transfer_func{
 enum protect{
 	YES_PROTECT,
 	NO_PROTECT,
+};
+
+enum burst_mode{
+	BURST_OFF,
+	BURST_ON,
 };
 
 enum analog_channel{
@@ -139,9 +141,24 @@ extern void *get_perform_device_reset_ptr(void);
 /* PV zero */
 extern void set_pv_zero(float pv_zero);
 extern float get_pv_zero(void);
-/* PV unit */
-extern void set_pv_unit(unsigned char pv_unit);
-extern unsigned char get_pv_unit(void);
+/* DV unit */
+void set_pv_unit(unsigned char pv_unit);
+unsigned char get_pv_unit(void);
+void set_sv_unit(unsigned char sv_unit);
+unsigned char get_sv_unit(void);
+void set_tv_unit(unsigned char tv_unit);
+unsigned char get_tv_unit(void);
+void set_qv_unit(unsigned char qv_unit);
+unsigned char get_qv_unit(void);
+/* DV code */
+void set_pv_code(unsigned char pv_code);
+unsigned char get_pv_code(void);
+void set_sv_code(unsigned char sv_code);
+unsigned char get_sv_code(void);
+void set_tv_code(unsigned char tv_code);
+unsigned char get_tv_code(void);
+void set_qv_code(unsigned char qv_code);
+unsigned char get_qv_code(void);
 // /* externally trim current zero */
 // extern void set_ext_zero_current(float ext_zero_curr);
 // extern float get_ext_zero_current(void);
@@ -159,5 +176,14 @@ extern void set_zero_trim_ptr(void *func);
 extern void *get_zero_trim_ptr(void);
 extern void set_gain_trim_ptr(void *func);
 extern void *get_gain_trim_ptr(void);
+/* numblers of response preambles */
+extern void set_response_preamble_num(unsigned char rsp_preamble_num);
+extern unsigned char get_response_preamble_num(void);
+/* burst mode command number */
+extern void set_burst_mode_cmd_num(unsigned char bt_cmd);
+extern unsigned char get_burst_mode_cmd_num(void);
+/* burst mode control code */
+extern void set_burst_mode_code(unsigned char bt_code);
+extern unsigned char get_burst_mode_code(void);
 
 #endif

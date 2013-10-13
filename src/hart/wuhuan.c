@@ -15,9 +15,19 @@ struct parameter
 	float ExtMeasuredGainCurr; //externallu measured gain current
 	float ActMeasuredGainCurr; //actual measured gain current
 	unsigned char PVUnit;
+	unsigned char SVUnit;
+	unsigned char TVUnit;
+	unsigned char QVUnit;
+	unsigned char PVCode;
+	unsigned char SVCode;
+	unsigned char TVCode;
+	unsigned char QVCode;
 	unsigned char ULRangeUnit;
 	unsigned char PollingAddr;
 	unsigned char LoopCurrentMode;
+	unsigned char ResposePreambleNum;
+	unsigned char BurstModeCmdNum;
+	unsigned char BurstModeCode;
 	unsigned char Msg[24];  //packed
 	unsigned char Tag[6];   //packed
 	unsigned char Dscp[12];  //descriptor , packed
@@ -153,9 +163,24 @@ void *get_perform_device_reset_ptr(void) { return para.PDR; }
 /* PV zero */
 void set_pv_zero(float pv_zero) { para.PVZero = pv_zero; }
 float get_pv_zero(void) { return para.PVZero; }
-/* PV unit */
+/* DV unit */
 void set_pv_unit(unsigned char pv_unit) { para.PVUnit = pv_unit; }
 unsigned char get_pv_unit(void) { return para.PVUnit; }
+void set_sv_unit(unsigned char sv_unit) { para.SVUnit = sv_unit; }
+unsigned char get_sv_unit(void) { return para.SVUnit; }
+void set_tv_unit(unsigned char tv_unit) { para.TVUnit = tv_unit; }
+unsigned char get_tv_unit(void) { return para.TVUnit; }
+void set_qv_unit(unsigned char qv_unit) { para.QVUnit = qv_unit; }
+unsigned char get_qv_unit(void) { return para.QVUnit; }
+/* DV code */
+void set_pv_code(unsigned char pv_code) { para.PVCode = pv_code; }
+unsigned char get_pv_code(void) { return para.PVCode; }
+void set_sv_code(unsigned char sv_code) { para.SVCode = sv_code; }
+unsigned char get_sv_code(void) { return para.SVCode; }
+void set_tv_code(unsigned char tv_code) { para.TVCode = tv_code; }
+unsigned char get_tv_code(void) { return para.TVCode; }
+void set_qv_code(unsigned char qv_code) { para.QVCode = qv_code; }
+unsigned char get_qv_code(void) { return para.QVCode; }
 // /* externally trim current zero */
 // void set_ext_zero_current(float ext_zero_curr) { para.ExtMeasuredZeroCurr = ext_zero_curr; }
 // float get_ext_zero_current(void) { return para.ExtMeasuredZeroCurr; }
@@ -173,6 +198,15 @@ void set_zero_trim_ptr(void *func) { para.TLCZero = (TrimLoopCurrent)func; }
 void *get_zero_trim_ptr(void) { return para.TLCZero; }
 void set_gain_trim_ptr(void *func) { para.TLCGain = (TrimLoopCurrent)func; }
 void *get_gain_trim_ptr(void) { return para.TLCGain; }
+/* numblers of response preambles */
+void set_response_preamble_num(unsigned char rsp_preamble_num) { para.ResposePreambleNum = rsp_preamble_num; }
+unsigned char get_response_preamble_num(void) { return para.ResposePreambleNum; }
+/* burst mode command number */
+void set_burst_mode_cmd_num(unsigned char bt_cmd) { para.BurstModeCmdNum = bt_cmd; }
+unsigned char get_burst_mode_cmd_num(void) { return para.BurstModeCmdNum; }
+/* burst mode control code */
+void set_burst_mode_code(unsigned char bt_code) { para.BurstModeCode = bt_code; }
+unsigned char get_burst_mode_code(void) { return para.BurstModeCode; }
 
 
 
