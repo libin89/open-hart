@@ -158,16 +158,16 @@ typedef enum
 
 extern void hart_rcv_msg(void);
 extern void hart_poll(void);
-extern void set_burst_mode(unsigned char burst_mode);
+// extern void set_burst_mode(unsigned char burst_mode);
 extern void set_tx_addr_size(unsigned char addr_size);
 extern unsigned char get_xmt_msg_type(void);
-extern void set_preamble_num(unsigned char preamble_num);
-extern unsigned char get_preamble_num(void);
-extern unsigned char get_preamble_num(void);
-extern unsigned char get_xmt_msg_type(void);
+// extern void set_preamble_num(unsigned char preamble_num);
+// extern unsigned char get_preamble_num(void);
 extern unsigned char *get_rx_data_pointer(void);
 // extern unsigned char get_error_code(void);
-
+extern void set_tx_byte_count(unsigned int byte_count);
+extern unsigned char get_hart_state(void);
+extern void hart_appli_completed_notify(unsigned char flg);
 
 extern void set_data_link(void);
 extern void frame_cmd_data(unsigned int (*func)(unsigned char cmd,unsigned char *data));

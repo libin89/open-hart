@@ -10,6 +10,7 @@ void (*command)(unsigned char *data);
 
 void set_respose_code(unsigned char *data)
 {
+	set_data_link( );
 	data[HrtByteCnt++] = HrtResposeCode;
 	data[HrtByteCnt++] = HrtDeviceStatus;
 }
@@ -19,7 +20,7 @@ void set_ID(unsigned char *data)
 	data[HrtByteCnt++] = 254;
 	data[HrtByteCnt++] = MANUFACTURER_ID;
 	data[HrtByteCnt++] = DEVICE_TYPE;
-	data[HrtByteCnt++] = get_preamble_num();
+	data[HrtByteCnt++] = get_response_preamble_num();
 	data[HrtByteCnt++] = 6; //hart revision
 	data[HrtByteCnt++] = 0x00; //device revision level
 	data[HrtByteCnt++] = 120;  //software revision
@@ -653,6 +654,39 @@ void C109_BurstModeControl(unsigned char *data)
 
 unsigned int cmd_function(unsigned char cmd,unsigned char *data)
 {
+	unsigned char burst_cmd,is_burst_mode;
+	
+	is_burst_mode = get_burst_mode_code();
+	if(cmd == 109) //burst mode control : enter or exit burst mode.
+	{
+		command = C109_BurstModeControl;
+		return HrtByteCnt;	
+	}
+	if(is_burst_mode)
+	{
+		burst_cmd = get_burst_mode_cmd_num();
+		switch(burst_cmd)
+		{
+			case 1:	
+				*(data-2) = 1;
+				command = C1_RdPV;	  
+				break;
+			case 2:	
+				*(data-2) = 2;
+				command = C2_RdLoopCurrPerOfRange;		
+				break;
+			case 3:	
+				*(data-2) = 3;
+				command = C3_RdDVLoopCurr;		
+				break;
+			default: 
+				*(data-2) = 1;
+				command = C1_RdPV;		
+				break;
+		}
+		return HrtByteCnt;
+	}
+	
 	switch(cmd)
 	{
 		case 0: command = C0_RdUniqueId;		break;
@@ -661,20 +695,20 @@ unsigned int cmd_function(unsigned char cmd,unsigned char *data)
 		case 3:	command = C3_RdDVLoopCurr;		break;
 		case 4:			break;
 		case 5:			break;
-		case 6:			break;
-		case 7:			break;
-		case 8:			break;
+		case 6:	command = C6_WrPollingAddr;		break;
+		case 7:	command = C7_RdLoopConfiguration; 		break;
+		case 8:	command = C8_RdDVClass;		break;
 		case 9:			break;
 		case 10:		break;
 		case 11:		break;
-		case 12:		break;
-		case 13:		break;
-		case 14:		break;
-		case 15:		break;
-		case 16:		break;
-		case 17:		break;
-		case 18:		break;
-		case 19:		break;
+		case 12: command = C12_RdMessage;		break;
+		case 13: command = C13_RdTagDescriptorDate;		break;
+		case 14: command = C14_RdPVTransducerInfo;	break;
+		case 15: command = C15_RdDeviceInfo;	break;
+		case 16: command = C16_RdFinalAssemblyNum;	break;
+		case 17: command = C17_WrMessage;		break;
+		case 18: command = C18_WrTagDescriptorDate;		break;
+		case 19: command = C19_WrFinalAssemblyNum;		break;
 		case 20:		break;
 		case 21:		break;
 		case 22:		break;
@@ -688,11 +722,31 @@ unsigned int cmd_function(unsigned char cmd,unsigned char *data)
 		case 30:    break;
 		case 31:    break;
 		case 32:    break;
-		case 33:    break;
+		case 33: command = C33_RdDeviceVariable;    break;
+		case 34: command = C34_WrPVDamping;		break;
+		case 35: command = C35_WrPVRange;		break;
+		case 36: command = C36_SetPVUpperRange;		break;
+		case 37: command = C37_SetPVLowerRange;		break;
+		case 40: command = C40_EnterOrExitFixedCurrent;		break;
+		case 41: command = C41_PerformSelfTest;		break;
+		case 42: command = C42_PerformDeviceReset;		break;
+		case 43: command = C43_PVZero;		break;
+		case 44: command = C44_WrPVUnit;		break;
+		case 45: command = C45_TrimLoopCurrentZero;		break;
+		case 46: command = C46_TrimLoopCurrentGain;		break;
+		case 47: command = C47_WrPVTransferFunction;		break;
+		case 49: command = C49_WrPVTransducerSerialNum;		break;
+		case 50: command = C50_RdDVAssignments;		break;
+		case 51: command = C51_WrDVAssignments;		break;
+		case 59: command = C59_WrNumOfResposePreambles;		break;
+		case 108: command = C108_WrBurstModeCmdNum;		break;
+		case 109: command = C109_BurstModeControl;		break;
 		default:
 			break;
 	}
+	enter_critical_section( );
 	command(data);
+	exit_critical_section( );
 	return HrtByteCnt;
 }
 
@@ -701,15 +755,39 @@ void hart_appli_init(void)
 	//serical init
 	serical_init(1200,8,HT_SERICAL_EVEN,1);
 	//set default tx_preamble_num,tx_address_size
-	set_burst_mode(TRUE);
+	set_burst_mode_code(FALSE);
 	set_tx_addr_size(LONG_ADDR_SIZE);
-	set_preamble_num(PREAMBLE_DEFAULT_NUM);
+	set_response_preamble_num(PREAMBLE_DEFAULT_NUM);
 }
 
 void hart_appli_poll(void)
 {
-	frame_cmd_data(cmd_function);
+	unsigned char xmt_msg_type;
+	unsigned char hart_state;
 	
+	hart_state = get_hart_state();
+	
+	if(hart_state == HRT_PROCESS)
+	{
+		xmt_msg_type = get_xmt_msg_type();
+		switch(xmt_msg_type)
+		{
+			case XMT_BACK:
+			case XMT_ACK:
+				HrtResposeCode = 0x00;
+				HrtDeviceStatus = 0x00;
+				break;
+			case XMT_COMM_ERR:
+				HrtResposeCode = 0x88;
+				break;
+			default:
+				break;
+		}
+		frame_cmd_data(cmd_function);
+		set_tx_byte_count(HrtByteCnt);
+		hart_appli_completed_notify(TRUE);
+	}
+	hart_poll();	
 }
 
 

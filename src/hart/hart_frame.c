@@ -46,7 +46,7 @@ unsigned char g_PreambleNum = PREAMBLE_DEFAULT_NUM;
 unsigned char g_TxFrameType = LONG_ADDR_SIZE;
 #endif
 
-unsigned char BurstMode = FALSE;
+// unsigned char BurstMode = FALSE;
 unsigned char g_Burst = FALSE;
 unsigned char g_Bt = 0;
 unsigned char g_Host = PRIMARY_MASTER;
@@ -111,17 +111,17 @@ extern void hart_poll(void)
 }
 
 /* func : implementation on the application layer */
-extern void set_burst_mode( unsigned char burst_mode )
-{
-	if(burst_mode)
-	{
-		BurstMode = TRUE;
-	}
-	else
-	{
-		BurstMode = FALSE;
-	}
-}
+// extern void set_burst_mode( unsigned char burst_mode )
+// {
+// 	if(burst_mode)
+// 	{
+// 		BurstMode = TRUE;
+// 	}
+// 	else
+// 	{
+// 		BurstMode = FALSE;
+// 	}
+// }
 
 /* get a pointer to rx_data_buf */
 extern unsigned char *get_rx_data_pointer(void)
@@ -140,14 +140,14 @@ extern unsigned char *get_rx_data_pointer(void)
 }
 
 /* setup para */
-extern unsigned char get_preamble_num(void)
-{
-	return g_Tx.preamble_num;
-}
-extern void set_preamble_num(unsigned char preamble_num)
-{
-	g_Tx.preamble_num = preamble_num;
-}
+// extern unsigned char get_preamble_num(void)
+// {
+// 	return g_Tx.preamble_num;
+// }
+// extern void set_preamble_num(unsigned char preamble_num)
+// {
+// 	g_Tx.preamble_num = preamble_num;
+// }
 extern void set_tx_addr_size(unsigned char addr_size)
 {
 	g_Tx.address_size = addr_size;
@@ -155,6 +155,15 @@ extern void set_tx_addr_size(unsigned char addr_size)
 extern unsigned char get_xmt_msg_type(void)
 {
 	return g_XmtMsgType;
+}
+extern void set_tx_byte_count(unsigned int byte_count)
+{
+	g_Tx.byte_count = byte_count;
+}
+
+extern unsigned char get_hart_state(void)
+{
+	return g_HartState;
 }
 // extern unsigned char get_error_code(void)
 // {
@@ -258,9 +267,10 @@ static unsigned char is_addr_match(void)
 static void hart_wait(void)
 {
 	unsigned char rcv_state;
+	unsigned char BurstMode;
 	
 	rcv_state = g_RcvState;
-	
+	BurstMode = get_burst_mode_code();
 	if(BurstMode)
 	{
 		g_Burst = TRUE;
@@ -437,7 +447,12 @@ static void hart_xmt_msg(void)
 	unsigned char i = 0;
 	unsigned char *data;
 	unsigned int cnt;
-
+	
+	g_Tx.preamble_num = get_response_preamble_num();
+	if(g_Tx.byte_count < 2)
+	{
+		return;
+	}
 	XmtState = g_XmtState;
 	cnt = g_Tx.address_size + 3 + g_Tx.byte_count + 1;
 	switch(XmtState)
@@ -455,7 +470,6 @@ static void hart_xmt_msg(void)
 			switch(g_XmtMsgType)
 			{
 				case XMT_BACK:
-					break;
 				case XMT_ACK:
 				case XMT_COMM_ERR:
 					for(i = 0;i < cnt;i++)
