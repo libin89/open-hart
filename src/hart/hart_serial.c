@@ -137,10 +137,12 @@ void USART3_IRQHandler(void)
 	if(USART_GetITStatus(USART3,USART_IT_TXE))
 	{
 		//hart_proxy_dequeue( );
+		hart_rcv_msg();
 	}
 	else if(USART_GetITStatus(USART3,USART_IT_RXNE))
 	{
-		//hart_proxy_enqueue( );	
+		//hart_proxy_enqueue( );
+		hart_xmt_msg();
 	}
 }
 

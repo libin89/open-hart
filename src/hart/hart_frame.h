@@ -157,6 +157,7 @@ typedef enum
 }hrt_state;
 
 extern void hart_rcv_msg(void);
+extern void hart_xmt_msg(void);
 extern void hart_poll(void);
 // extern void set_burst_mode(unsigned char burst_mode);
 extern void set_tx_addr_size(unsigned char addr_size);

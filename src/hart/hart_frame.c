@@ -69,7 +69,6 @@ static unsigned char s_RcvBufferPos;
 
 static unsigned char longitudinal_parity(unsigned char *data, unsigned int cnt);
 static void hart_wait(void);
-static void hart_xmt_msg(void);
 static unsigned char is_addr_match(void);
 static void hart_process(void);
 
@@ -441,7 +440,7 @@ void hart_rcv_msg(void)
 	}
 }
 
-static void hart_xmt_msg(void)
+void hart_xmt_msg(void)
 {
 	tsm_state XmtState = XMT_INIT;
 	unsigned char i = 0;
