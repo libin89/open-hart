@@ -657,14 +657,16 @@ unsigned int cmd_function(unsigned char cmd,unsigned char *data)
 	unsigned char burst_cmd,is_burst_mode;
 	
 	is_burst_mode = get_burst_mode_code();
-	if(cmd == 109) //burst mode control : enter or exit burst mode.
-	{
-		command = C109_BurstModeControl;
-		return HrtByteCnt;	
-	}
+	
 	if(is_burst_mode)
 	{
 		burst_cmd = get_burst_mode_cmd_num();
+		
+		if(cmd == 109) //burst mode control : enter or exit burst mode.
+		{
+			command = C109_BurstModeControl;
+			return HrtByteCnt;	
+		}
 		switch(burst_cmd)
 		{
 			case 1:	
@@ -754,6 +756,7 @@ void hart_appli_init(void)
 {
 	//serical init
 	serical_init(1200,8,HT_SERICAL_EVEN,1);
+	serical_enable(TRUE,FALSE);
 	//set default tx_preamble_num,tx_address_size
 	set_burst_mode_code(FALSE);
 	set_tx_addr_size(LONG_ADDR_SIZE);

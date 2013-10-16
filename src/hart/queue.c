@@ -1,7 +1,6 @@
 #include "queue.h"
 #include <stdlib.h>
 
-
 unsigned char queue_init(common_queue_t *queue)
 {
 	queue->front = queue->rear = (queue_node_ptr)malloc(sizeof(queue_node));

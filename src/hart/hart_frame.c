@@ -21,7 +21,7 @@ typedef struct
 	unsigned char unique_device_id[3];
 }long_addr_type;
 
-unsigned char polling_addr = 0; //short address
+//unsigned char polling_addr = 0; //short address
 long_addr_type long_addr = {
 	MANUFACTURER_ID,DEVICE_TYPE,UNIQUE_DEVICE_ID0,UNIQUE_DEVICE_ID1,UNIQUE_DEVICE_ID2,
 };
@@ -56,8 +56,7 @@ xmt_msg_type g_XmtMsgType;
 //unsigned char g_PreambleNum = 0;
 unsigned char g_AppliCompletedNotify = 0;
 
-
-hrt_state g_HartState = HRT_RCV;
+hrt_state g_HartState = HRT_WAIT;
 rsm_state g_RcvState = RCV_WAIT_IDLE;
 tsm_state g_XmtState = XMT_INIT;
 
@@ -88,8 +87,6 @@ static unsigned char longitudinal_parity(unsigned char *data, unsigned int cnt)
 extern void hart_poll(void)
 {
 	hrt_state HartState;
-	rcv_msg_type RcvMsgType;
-	xmt_msg_type XmtMsgType;
 	
 	HartState = g_HartState;
 	switch(HartState)
@@ -171,6 +168,9 @@ extern unsigned char get_hart_state(void)
 
 extern void set_data_link(void)
 {
+	unsigned char polling_addr;
+	
+	polling_addr = get_polling_addr();
 	if(g_Tx.address_size != SHORT_ADDR_SIZE || \
 			g_Tx.address_size == LONG_ADDR_SIZE)
 	{
@@ -189,7 +189,7 @@ extern void set_data_link(void)
 	if(g_Tx.address_size == LONG_ADDR_SIZE)
 	{
 		g_Tx.data_buf[0] = g_Tx.delimiter | LONG_FRAME;
-		g_Tx.data_buf[1] = long_addr.manufacturer_id & 0x3F;
+		g_Tx.data_buf[1] = (long_addr.manufacturer_id & 0x3F) | g_Host;
 		g_Tx.data_buf[2] = long_addr.device_type;
 		g_Tx.data_buf[3] = long_addr.unique_device_id[0];
 		g_Tx.data_buf[4] = long_addr.unique_device_id[1];
@@ -199,7 +199,7 @@ extern void set_data_link(void)
 	else
 	{
 		g_Tx.data_buf[0] = g_Tx.delimiter | SHORT_FRAME;
-		g_Tx.data_buf[1] = polling_addr;
+		g_Tx.data_buf[1] = polling_addr | g_Host;
 		g_Tx.data_buf[2] = g_Rx.data_buf[2];
 	}
 	
@@ -235,6 +235,9 @@ extern void frame_cmd_data(unsigned int (*func)(unsigned char cmd,unsigned char 
 
 static unsigned char is_addr_match(void)
 {
+	unsigned char polling_addr;
+	
+	polling_addr = get_polling_addr();
 	if(g_Rx.address_size == SHORT_ADDR_SIZE)
 	{
 		if( polling_addr == (g_Rx.data_buf[HRT_SHORTF_ADDR_OFF]&0x3F) )
@@ -330,6 +333,10 @@ void hart_rcv_msg(void)
 		case RCV_WAIT_START:
 			if(is_timeout_id(GAP_TIMER) || (Byte != PREAMBLE))
 			{
+				g_RcvMsgType = RCV_ERR;
+			}
+			else
+			{
 				if(Byte == PREAMBLE)
 				{
 					PreambleNum++;
@@ -408,31 +415,40 @@ void hart_rcv_msg(void)
 			set_delay_time(GAP_TIMER,HRT_GAPT);		
 			break;
 		case RCV_READ:
-			g_Rx.data_buf[s_RcvBufferPos++] = Byte;
-			if(g_Rx.address_size == SHORT_ADDR_SIZE)
-			{	
-				if(s_RcvBufferPos == HRT_SHORTF_LEN_OFF+1)
-				{
-					ByteCount = Byte;
-				}
-				if(s_RcvBufferPos > HRT_SHORTF_LEN_OFF+ByteCount+1)
-				{
-					g_RcvState = RCV_DONE;
-				}
+			if(is_timeout_id(GAP_TIMER))
+			{
+				g_RcvMsgType = RCV_ERR;
 			}
 			else
 			{
-				if(s_RcvBufferPos == HRT_LONGF_LEN_OFF+1)
-				{
-					ByteCount = Byte;
+				g_Rx.data_buf[s_RcvBufferPos++] = Byte;
+				if(g_Rx.address_size == SHORT_ADDR_SIZE)
+				{	
+					if(s_RcvBufferPos == HRT_SHORTF_LEN_OFF+1)
+					{
+						ByteCount = Byte;
+					}
+					if(s_RcvBufferPos > HRT_SHORTF_LEN_OFF+ByteCount+1)
+					{
+						g_RcvState = RCV_DONE;
+					}
 				}
-				if(s_RcvBufferPos > HRT_LONGF_LEN_OFF+ByteCount+1)
+				else
 				{
-					g_RcvState = RCV_DONE;
-				}
-			}	
+					if(s_RcvBufferPos == HRT_LONGF_LEN_OFF+1)
+					{
+						ByteCount = Byte;
+					}
+					if(s_RcvBufferPos > HRT_LONGF_LEN_OFF+ByteCount+1)
+					{
+						g_RcvState = RCV_DONE;
+					}
+				}	
+			}
+			set_delay_time(GAP_TIMER,HRT_GAPT);
 			break;
 		case RCV_DONE:
+			is_timeout_id(GAP_TIMER);
 			g_HartState = HRT_WAIT;
 			break;
 		default:
@@ -469,6 +485,14 @@ void hart_xmt_msg(void)
 			switch(g_XmtMsgType)
 			{
 				case XMT_BACK:
+					if(is_timeout_id(BT_TIMER))
+					{
+						for(i = 0;i < cnt;i++)
+						{
+							serical_put_byte(g_Tx.data_buf);
+						}
+					}
+					set_delay_time(BT_TIMER,0);
 				case XMT_ACK:
 				case XMT_COMM_ERR:
 					for(i = 0;i < cnt;i++)
@@ -498,7 +522,9 @@ extern void hart_appli_completed_notify(unsigned char flg)
 static void hart_process(void)
 {
 	unsigned int cnt;
+	unsigned char is_burst_mode;
 	
+	is_burst_mode = get_burst_mode_code();
 	cnt = g_Rx.address_size + 3 + g_Rx.data_buf[g_Rx.address_size+2];
 	if(is_timeout_id(SLAVE_TIMER))      //slave time out 
 	{
@@ -519,9 +545,17 @@ static void hart_process(void)
 	
 	if(g_AppliCompletedNotify)
 	{
+		g_AppliCompletedNotify = 0;
 		cnt = g_Tx.address_size + 3 + g_Tx.byte_count;
 		g_Tx.data_buf[cnt] = longitudinal_parity(g_Tx.data_buf,cnt);
-		g_HartState = HRT_XMT;
+		if(is_burst_mode)
+		{
+			g_HartState = HRT_WAIT;
+		}
+		else
+		{
+			g_HartState = HRT_XMT;
+		}		
 	}
 }
 

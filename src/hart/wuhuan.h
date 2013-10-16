@@ -5,7 +5,7 @@
 // const unsigned char device_type;
 // const unsigned char unique_device_id[3];
 
-#define MANUFACTURER_ID  0xFA
+#define MANUFACTURER_ID  0x3A
 #define DEVICE_TYPE      0x15
 #define UNIQUE_DEVICE_ID0 0x17
 #define UNIQUE_DEVICE_ID1 0x3E

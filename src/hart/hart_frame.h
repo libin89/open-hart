@@ -170,6 +170,7 @@ extern void set_tx_byte_count(unsigned int byte_count);
 extern unsigned char get_hart_state(void);
 extern void hart_appli_completed_notify(unsigned char flg);
 
+
 extern void set_data_link(void);
 extern void frame_cmd_data(unsigned int (*func)(unsigned char cmd,unsigned char *data));
 

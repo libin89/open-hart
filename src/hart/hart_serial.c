@@ -1,7 +1,8 @@
 #include "hart_driver.h"
+#include "hart_frame.h"
 
-extern void hart_proxy_dequeue(void);
-extern void hart_proxy_enqueue(void);
+// extern void hart_proxy_dequeue(void);
+// extern void hart_proxy_enqueue(void);
 
 unsigned char serical_init(unsigned int baud, 
 																	unsigned char data_bit, 
@@ -33,6 +34,7 @@ unsigned char serical_init(unsigned int baud,
 	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOB,&GPIO_InitStruct);
 	
+	#if 0
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_13;              //CTS
 	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
@@ -42,7 +44,7 @@ unsigned char serical_init(unsigned int baud,
 	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_14;            //RTS
 	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOB,&GPIO_InitStruct);
-	
+	#endif
 
 	USART_InitStructure.USART_BaudRate = baud;
 	switch ( parity )
@@ -88,7 +90,10 @@ unsigned char serical_init(unsigned int baud,
 	if( initialized )
 	{
 		enter_critical_section( );
+		#if 0
 		USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_RTS_CTS;
+		#endif
+		USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 		USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
 		USART_Init(USART3, &USART_InitStructure);
 		USART_Cmd(USART3, ENABLE);
@@ -133,17 +138,17 @@ unsigned char serical_get_byte(unsigned char *byte)
 
 void USART3_IRQHandler(void)
 {
-
-	if(USART_GetITStatus(USART3,USART_IT_TXE))
+	if(USART_GetITStatus(USART3,USART_IT_RXNE))
 	{
-		//hart_proxy_dequeue( );
+		//hart_proxy_enqueue( );	
 		hart_rcv_msg();
 	}
-	else if(USART_GetITStatus(USART3,USART_IT_RXNE))
+	else if(USART_GetITStatus(USART3,USART_IT_TXE))
 	{
-		//hart_proxy_enqueue( );
+		//hart_proxy_dequeue( );
 		hart_xmt_msg();
 	}
+	
 }
 
 void
