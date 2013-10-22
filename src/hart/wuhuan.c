@@ -1,5 +1,12 @@
 #include "wuhuan.h"
 
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE 0
+#endif
+
 struct parameter
 {
 	float PV;
@@ -208,7 +215,93 @@ unsigned char get_burst_mode_cmd_num(void) { return para.BurstModeCmdNum; }
 void set_burst_mode_code(unsigned char bt_code) { para.BurstModeCode = bt_code; }
 unsigned char get_burst_mode_code(void) { return para.BurstModeCode; }
 
+unsigned char packed_ascii(unsigned char* Src,unsigned int SrcLen,unsigned char* Dst,unsigned int DstLen)
+{ /* Convert from visible string (8 bit format) into packed ascii
+     string (6 bit format) */
+  unsigned char e;
+  unsigned char byDstIdx = 0;
+  unsigned char bySrcIdx = 0;
+  
+  if (SrcLen == 0)
+    return FALSE;
+  /* initialize destination with default values */
+  for (e=0;e<SrcLen;e++)
+  { switch (e%3)
+    { case 0:
+        Dst[e] = 0x7d; break;
+      case 1:
+        Dst[e] = 0xf7; break;
+      case 2:
+        Dst[e] = 0xdf; break;
+    }
+  }
+  DstLen = 0;
+  while (SrcLen)
+  { /* First character */
+    Dst[byDstIdx] &= 0x03;
+    Dst[byDstIdx] |= (Src[bySrcIdx] & 0x3F) << 2;
+    (DstLen)++;
+    if (--SrcLen == 0)
+      return TRUE;
+    /* Second character */
+    Dst[byDstIdx] &= 0xFC;
+    Dst[byDstIdx] |= (Src[bySrcIdx+1] & 0x30) >> 4;
+    Dst[byDstIdx+1] &= 0x0F;
+    Dst[byDstIdx+1] |= (Src[bySrcIdx] & 0x0F) << 4;
+    (DstLen)++;
+    if (--SrcLen == 0)
+      return TRUE;
+    /* Third character */
+    Dst[byDstIdx+1] &= 0xF0;
+    Dst[byDstIdx+1] |= (Src[bySrcIdx+2] & 0x3C) >> 2;
+    Dst[byDstIdx+2] &= 0x3F;
+    Dst[byDstIdx+2] |= Src[bySrcIdx+2] << 6;
+    (DstLen)++;
+    if (--SrcLen == 0)
+      return TRUE; 
+    /* Fourth character */
+    Dst[byDstIdx+2] &= 0xC0;
+    Dst[byDstIdx+2] |= Src[bySrcIdx+3] & 0x3F;
+    if (--SrcLen == 0)
+      return TRUE;
+    Dst += 3; Src += 4; 
+  }
+  return FALSE;
+}
 
+unsigned char unpacked_ascii(unsigned char* Src,unsigned int SrcLen,unsigned char *Dst,unsigned int DstLen)
+{ /* Convert from packed ascii string (6 bit format) into visible
+     string (8 bit format) */
+  unsigned char uc;
+  unsigned char e;
+  unsigned char byMyLen;
+
+  DstLen = 0;
+  if (SrcLen < 3)
+    return FALSE;
+  if ((SrcLen % 3)>0)
+    return FALSE;
+  byMyLen = (unsigned char) (SrcLen - (SrcLen % 3));
+  for (e=0;e<(byMyLen-2);e+=3)
+  { /* First character */
+    uc = (unsigned char)((Src[e] >> 2) & 0x3F);
+    if (uc < 0x20) uc += 0x40;
+    Dst[(DstLen)++] = uc;
+    /* Second character */
+    uc = (unsigned char)(((Src[e] << 4 ) & 0x3F) | ((Src[e+1] >> 4) & 0x3F));
+    if (uc < 0x20) uc += 0x40;
+    Dst[(DstLen)++] = uc;
+    /* Third character */
+    uc = (unsigned char)(((Src[e+1] << 2 ) & 0x3F) | ((Src[e+2] >> 6) & 0x3F));
+    if (uc < 0x20) uc += 0x40;
+    Dst[(DstLen)++] = uc;
+    /* Fourth character */
+    uc = (unsigned char)(Src[e+2] & 0x3F);
+    if (uc < 0x20) uc += 0x40;
+    Dst[(DstLen)++] = uc;
+  }
+  return TRUE;
+}
 
 
 

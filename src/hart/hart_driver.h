@@ -22,7 +22,7 @@ extern unsigned char serical_init(unsigned int baud,
 		parity_type parity, 
 		unsigned char stop_bit);
 extern void serical_enable(unsigned char rx_enable, unsigned char tx_enable);
-extern unsigned char serical_put_byte(unsigned char *byte);
+extern unsigned char serical_put_byte(unsigned char byte);
 extern unsigned char serical_get_byte(unsigned char *byte);
 
 /* timer declaration */

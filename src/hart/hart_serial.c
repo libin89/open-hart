@@ -124,9 +124,9 @@ void serical_enable(unsigned char rx_enable, unsigned char tx_enable)
     exit_critical_section( );
 }
 
-unsigned char serical_put_byte(unsigned char *byte)
+unsigned char serical_put_byte(unsigned char byte)
 {
-	USART_SendData(USART3, *byte);
+	USART_SendData(USART3, byte);
 	return TRUE;
 }
 
@@ -140,12 +140,10 @@ void USART3_IRQHandler(void)
 {
 	if(USART_GetITStatus(USART3,USART_IT_RXNE))
 	{
-		//hart_proxy_enqueue( );	
 		hart_rcv_msg();
 	}
 	else if(USART_GetITStatus(USART3,USART_IT_TXE))
 	{
-		//hart_proxy_dequeue( );
 		hart_xmt_msg();
 	}
 	

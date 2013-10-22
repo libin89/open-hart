@@ -186,4 +186,7 @@ extern unsigned char get_burst_mode_cmd_num(void);
 extern void set_burst_mode_code(unsigned char bt_code);
 extern unsigned char get_burst_mode_code(void);
 
+extern unsigned char packed_ascii(unsigned char* Src,unsigned int SrcLen,unsigned char* Dst,unsigned int DstLen);
+extern unsigned char unpacked_ascii(unsigned char* Src,unsigned int SrcLen,unsigned char *Dst,unsigned int DstLen);
+
 #endif

@@ -2,6 +2,7 @@
 #include "hart_driver.h"
 #include "soft_timer.h"
 #include "wuhuan.h"
+#include "hart_signal.h"
 
 typedef struct 
 {
@@ -54,13 +55,16 @@ rcv_msg_type g_RcvMsgType;
 xmt_msg_type g_XmtMsgType;
 
 //unsigned char g_PreambleNum = 0;
-unsigned char g_AppliCompletedNotify = 0;
+// unsigned char g_AppliCompletedNotify = 0;
 
 hrt_state g_HartState = HRT_WAIT;
 rsm_state g_RcvState = RCV_WAIT_IDLE;
 tsm_state g_XmtState = XMT_INIT;
 
-static unsigned char s_RcvBufferPos;
+static volatile unsigned char *pXmtBufferCur;
+static volatile unsigned int s_XmtBufferCnt;
+static volatile unsigned char s_XmtPreambleNum;
+static volatile unsigned int s_RcvBufferPos;
 // static unsigned char s_XmtBufferPos;
 
 
@@ -86,23 +90,21 @@ static unsigned char longitudinal_parity(unsigned char *data, unsigned int cnt)
 
 extern void hart_poll(void)
 {
-	hrt_state HartState;
-	
-	HartState = g_HartState;
-	switch(HartState)
+	if(RcvFrameCnt)
 	{
-		case HRT_WAIT:
+		get_rcv_frame_count();
+		if(g_HartState == HRT_WAIT)
+		{
 			hart_wait( );
-			break;
-		case HRT_RCV:
-			break;
-		case HRT_XMT:
-			break;
-		case HRT_PROCESS:
+		}
+		if(g_HartState == HRT_PROCESS)
+		{
 			hart_process( );
-			break;
-		default:
-			break;
+			s_XmtPreambleNum = get_response_preamble_num();
+			s_XmtBufferCnt = g_Tx.address_size + 3 + g_Tx.byte_count + 1;
+			pXmtBufferCur = g_Tx.data_buf;
+			serical_enable(FALSE,TRUE);
+		}
 	}
 }
 
@@ -144,18 +146,18 @@ extern unsigned char *get_rx_data_pointer(void)
 // {
 // 	g_Tx.preamble_num = preamble_num;
 // }
-extern void set_tx_addr_size(unsigned char addr_size)
-{
-	g_Tx.address_size = addr_size;
-}
+// extern void set_tx_addr_size(unsigned char addr_size)
+// {
+// 	g_Tx.address_size = addr_size;
+// }
 extern unsigned char get_xmt_msg_type(void)
 {
 	return g_XmtMsgType;
 }
-extern void set_tx_byte_count(unsigned int byte_count)
-{
-	g_Tx.byte_count = byte_count;
-}
+// extern void set_tx_byte_count(unsigned int byte_count)
+// {
+// 	g_Tx.byte_count = byte_count;
+// }
 
 extern unsigned char get_hart_state(void)
 {
@@ -171,12 +173,14 @@ extern void set_data_link(void)
 	unsigned char polling_addr;
 	
 	polling_addr = get_polling_addr();
-	if(g_Tx.address_size != SHORT_ADDR_SIZE || \
-			g_Tx.address_size == LONG_ADDR_SIZE)
+	if(g_Rx.address_size == LONG_ADDR_SIZE)
 	{
 		g_Tx.address_size = LONG_ADDR_SIZE;
 	}
-// 	g_Tx.cmd = g_Rx.cmd;
+	else
+	{
+		g_Tx.address_size = SHORT_ADDR_SIZE;
+	}
 	
 	if(g_Burst)               //burst mode command-byte is ?
 	{
@@ -189,18 +193,16 @@ extern void set_data_link(void)
 	if(g_Tx.address_size == LONG_ADDR_SIZE)
 	{
 		g_Tx.data_buf[0] = g_Tx.delimiter | LONG_FRAME;
-		g_Tx.data_buf[1] = (long_addr.manufacturer_id & 0x3F) | g_Host;
+		g_Tx.data_buf[1] = (long_addr.manufacturer_id & 0x3F) | (g_Host<<7);
 		g_Tx.data_buf[2] = long_addr.device_type;
 		g_Tx.data_buf[3] = long_addr.unique_device_id[0];
 		g_Tx.data_buf[4] = long_addr.unique_device_id[1];
 		g_Tx.data_buf[5] = long_addr.unique_device_id[2];
-		g_Tx.data_buf[6] = g_Rx.data_buf[6];
 	}
 	else
 	{
 		g_Tx.data_buf[0] = g_Tx.delimiter | SHORT_FRAME;
-		g_Tx.data_buf[1] = polling_addr | g_Host;
-		g_Tx.data_buf[2] = g_Rx.data_buf[2];
+		g_Tx.data_buf[1] = polling_addr | (g_Host<<7);
 	}
 	
 }
@@ -208,7 +210,7 @@ extern void set_data_link(void)
 /* func : implementation on the application layer 
 	 
 */
-extern void frame_cmd_data(unsigned int (*func)(unsigned char cmd,unsigned char *data))
+extern void frame_cmd_data(void)
 {
 	unsigned char cmd;
 	unsigned char *data;
@@ -219,7 +221,7 @@ extern void frame_cmd_data(unsigned int (*func)(unsigned char cmd,unsigned char 
 		data = &g_Tx.data_buf[HRT_LONGF_RSPCODE1_OFF];
 		
 		g_Tx.data_buf[HRT_LONGF_CMD_OFF] = cmd;
-		g_Tx.byte_count = func(cmd,data);
+		g_Tx.byte_count = cmd_function(cmd,data);
 		g_Tx.data_buf[HRT_LONGF_LEN_OFF] = g_Tx.byte_count;
 	}
 	else
@@ -228,8 +230,8 @@ extern void frame_cmd_data(unsigned int (*func)(unsigned char cmd,unsigned char 
 		data = &g_Tx.data_buf[HRT_SHORTF_RSPCODE1_OFF];
 		
 		g_Tx.data_buf[HRT_SHORTF_CMD_OFF] = cmd;
-		g_Tx.byte_count = func(cmd,data);
-		g_Tx.data_buf[HRT_LONGF_LEN_OFF] = g_Tx.byte_count;
+		g_Tx.byte_count = cmd_function(cmd,data);
+		g_Tx.data_buf[HRT_SHORTF_LEN_OFF] = g_Tx.byte_count;
 	}
 }
 
@@ -268,10 +270,10 @@ static unsigned char is_addr_match(void)
 
 static void hart_wait(void)
 {
-	unsigned char rcv_state;
+	rcv_msg_type rcv_msg_t;
 	unsigned char BurstMode;
 	
-	rcv_state = g_RcvState;
+	rcv_msg_t = g_RcvMsgType;
 	BurstMode = get_burst_mode_code();
 	if(BurstMode)
 	{
@@ -287,32 +289,34 @@ static void hart_wait(void)
 	if( g_Burst && (is_timeout_id(BT_TIMER)) )
 	{
 		g_XmtMsgType = XMT_BACK;
-		g_HartState = HRT_XMT;
 		g_Host = (~g_Host)&0x01;
+		set_delay_time(BT_TIMER,HRT_RT2);
 	}
-	
-	switch(rcv_state)
+	else
 	{
-		case RCV_ERR:
-			break;
-		case RCV_ACK:
-			set_delay_time(BT_TIMER,0);
-			set_delay_time(SLAVE_TIMER,HRT_STO);
-			break;
-		case RCV_STX:
-			if(is_addr_match())
-			{
+		switch(rcv_msg_t)
+		{
+			case RCV_ERR:
+				break;
+			case RCV_ACK:
 				set_delay_time(BT_TIMER,0);
 				set_delay_time(SLAVE_TIMER,HRT_STO);
-				g_HartState = HRT_PROCESS;              //
-			}
-			else
-			{
-				set_delay_time(BT_TIMER,HRT_PRI_RT1);
-			}
-			break;
-			default:
 				break;
+			case RCV_STX:
+				if(is_addr_match())
+				{
+					set_delay_time(BT_TIMER,0);
+					set_delay_time(SLAVE_TIMER,HRT_STO);
+					g_HartState = HRT_PROCESS;              //
+				}
+				else
+				{
+					set_delay_time(BT_TIMER,HRT_PRI_RT1);
+				}
+				break;
+				default:
+					break;
+		}
 	}
 }
 
@@ -326,12 +330,15 @@ void hart_rcv_msg(void)
 	switch(g_RcvState)
 	{
 		case RCV_WAIT_IDLE:
-			PreambleNum = 1;
-			set_delay_time(GAP_TIMER,HRT_GAPT);
-			g_RcvState = RCV_WAIT_START;
+			if(Byte == PREAMBLE)
+			{
+				PreambleNum = 1;
+				g_RcvState = RCV_WAIT_START;
+				set_delay_time(GAP_TIMER,HRT_GAPT);
+			}
 			break;
 		case RCV_WAIT_START:
-			if(is_timeout_id(GAP_TIMER) || (Byte != PREAMBLE))
+			if(is_timeout_id(GAP_TIMER))
 			{
 				g_RcvMsgType = RCV_ERR;
 			}
@@ -353,7 +360,11 @@ void hart_rcv_msg(void)
 								s_RcvBufferPos = 0;
 								g_Rx.data_buf[s_RcvBufferPos++] = Byte;
 								g_RcvState = RCV_READ;
-							}							
+							}		
+							else
+							{
+								g_RcvMsgType = RCV_ERR;
+							}
 							break;
 						case (SHORT_FRAME|RCV_ACK):
 							if(PreambleNum > 1)
@@ -363,6 +374,10 @@ void hart_rcv_msg(void)
 								s_RcvBufferPos = 0;
 								g_Rx.data_buf[s_RcvBufferPos++] = Byte;
 								g_RcvState = RCV_READ;
+							}
+							else
+							{
+								g_RcvMsgType = RCV_ERR;
 							}
 							break;
 						case (SHORT_FRAME|RCV_BACK):
@@ -374,6 +389,10 @@ void hart_rcv_msg(void)
 								g_Rx.data_buf[s_RcvBufferPos++] = Byte;
 								g_RcvState = RCV_READ;
 							}
+							else
+							{
+								g_RcvMsgType = RCV_ERR;
+							}
 							break;
 						case (LONG_FRAME|RCV_STX):
 							if(PreambleNum > 1)
@@ -383,6 +402,10 @@ void hart_rcv_msg(void)
 								s_RcvBufferPos = 0;
 								g_Rx.data_buf[s_RcvBufferPos++] = Byte;
 								g_RcvState = RCV_READ;
+							}
+							else
+							{
+								g_RcvMsgType = RCV_ERR;
 							}
 							break;
 						case (LONG_FRAME|RCV_ACK):
@@ -394,6 +417,10 @@ void hart_rcv_msg(void)
 								g_Rx.data_buf[s_RcvBufferPos++] = Byte;
 								g_RcvState = RCV_READ;
 							}
+							else
+							{
+								g_RcvMsgType = RCV_ERR;
+							}
 							break;
 						case (LONG_FRAME|RCV_BACK):
 							if(PreambleNum > 1)
@@ -404,6 +431,10 @@ void hart_rcv_msg(void)
 								g_Rx.data_buf[s_RcvBufferPos++] = Byte;
 								g_RcvState = RCV_READ;
 							}
+							else
+							{
+								g_RcvMsgType = RCV_ERR;
+							}
 							break;
 						default:
 							g_RcvMsgType = RCV_ERR;
@@ -411,8 +442,8 @@ void hart_rcv_msg(void)
 							break;
 					}
 				}
-			}
-			set_delay_time(GAP_TIMER,HRT_GAPT);		
+			}	
+			set_delay_time(GAP_TIMER,HRT_GAPT);
 			break;
 		case RCV_READ:
 			if(is_timeout_id(GAP_TIMER))
@@ -446,10 +477,16 @@ void hart_rcv_msg(void)
 				}	
 			}
 			set_delay_time(GAP_TIMER,HRT_GAPT);
-			break;
-		case RCV_DONE:
-			is_timeout_id(GAP_TIMER);
-			g_HartState = HRT_WAIT;
+			if(g_RcvState == RCV_DONE)
+			{
+				is_timeout_id(GAP_TIMER);
+				g_HartState = HRT_WAIT;
+				g_RcvState = RCV_WAIT_IDLE;
+				PreambleNum = 0;
+				ByteCount = 0;
+				set_rcv_frame_count();
+				serical_enable(FALSE,FALSE);
+			}
 			break;
 		default:
 			break;
@@ -458,66 +495,51 @@ void hart_rcv_msg(void)
 
 void hart_xmt_msg(void)
 {
-	tsm_state XmtState = XMT_INIT;
-	unsigned char i = 0;
-	unsigned char *data;
-	unsigned int cnt;
+	//tsm_state XmtState = XMT_INIT;
+// 	unsigned char i = 0;
+// 	unsigned int cnt;
 	
-	g_Tx.preamble_num = get_response_preamble_num();
-	if(g_Tx.byte_count < 2)
+	if(g_Tx.byte_count >= 2)
 	{
-		return;
-	}
-	XmtState = g_XmtState;
-	cnt = g_Tx.address_size + 3 + g_Tx.byte_count + 1;
-	switch(XmtState)
-	{
-		case XMT_INIT:
-			serical_enable(FALSE,TRUE);
-			g_XmtState = XMT_WRITE;
-			break;
-		case XMT_WRITE:
-			for(i = 0;i < g_Tx.preamble_num;i++)
-			{
-				*data = 0xFF;
-				serical_put_byte(data);
-			}
-			switch(g_XmtMsgType)
-			{
-				case XMT_BACK:
-					if(is_timeout_id(BT_TIMER))
+		switch(g_XmtState)
+		{
+			case XMT_INIT:
+				g_XmtState = XMT_WRITE;
+			case XMT_WRITE:
+				if(s_XmtPreambleNum != 0)
+				{
+					serical_put_byte(PREAMBLE);
+					s_XmtPreambleNum--;
+				}
+				else
+				{
+					if(s_XmtBufferCnt != 0)
 					{
-						for(i = 0;i < cnt;i++)
-						{
-							serical_put_byte(g_Tx.data_buf);
-						}
+						serical_put_byte(*pXmtBufferCur);
+						pXmtBufferCur++;
+						s_XmtBufferCnt--;
 					}
-					set_delay_time(BT_TIMER,0);
-				case XMT_ACK:
-				case XMT_COMM_ERR:
-					for(i = 0;i < cnt;i++)
+					else
 					{
-						serical_put_byte(g_Tx.data_buf);
+						g_XmtState = XMT_DONE;
 					}
-					break;
-				default:
-					break;
-			}
-			break;
-		case XMT_DONE:
-			g_XmtState = XMT_INIT;
-			g_HartState = HRT_WAIT;
-		  serical_enable(TRUE,FALSE);
-			break;
-		default:
-			break;
-	}
+				}
+				if(g_XmtState == XMT_DONE)
+				{
+					serical_enable(TRUE,FALSE);
+					g_XmtState = XMT_INIT;
+				}
+				break;
+			default :
+				break;
+		}
+	}	
 }
 
-extern void hart_appli_completed_notify(unsigned char flg)
-{
-	g_AppliCompletedNotify = flg;
-}
+// extern void hart_appli_completed_notify(unsigned char flg)
+// {
+// 	g_AppliCompletedNotify = flg;
+// }
 
 static void hart_process(void)
 {
@@ -542,21 +564,20 @@ static void hart_process(void)
 			//hrt_respose_code = HRT_LONGITUDINAL_PARITY_ERROR;
 		}
 	}
-	
-	if(g_AppliCompletedNotify)
+	frame_cmd_data();
+	//hart_appli_completed_notify(TRUE);
+	cnt = g_Tx.address_size + 3 + g_Tx.byte_count;
+	g_Tx.data_buf[cnt] = longitudinal_parity(g_Tx.data_buf,cnt);
+	if(is_burst_mode)
 	{
-		g_AppliCompletedNotify = 0;
-		cnt = g_Tx.address_size + 3 + g_Tx.byte_count;
-		g_Tx.data_buf[cnt] = longitudinal_parity(g_Tx.data_buf,cnt);
-		if(is_burst_mode)
-		{
-			g_HartState = HRT_WAIT;
-		}
-		else
-		{
-			g_HartState = HRT_XMT;
-		}		
+		g_HartState = HRT_WAIT;
+		//serical_enable(FALSE,TRUE);
 	}
+	else
+	{
+		g_HartState = HRT_WAIT;
+		//serical_enable(FALSE,TRUE);
+	}		
 }
 
 

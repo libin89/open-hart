@@ -201,6 +201,7 @@ void C14_RdPVTransducerInfo(unsigned char *data)
 {
 	unsigned char i = 0;
 	unsigned char *dat;	
+	float tmp;
 	
 	set_respose_code(data);
 	if(!HrtResposeCode)
@@ -211,9 +212,12 @@ void C14_RdPVTransducerInfo(unsigned char *data)
 			data[HrtByteCnt++] = *(dat+i);
 		}
 		data[HrtByteCnt++] = get_pv_unit();
-		data[HrtByteCnt++] = get_transducer_upper();
-		data[HrtByteCnt++] = get_transducer_lower();
-		data[HrtByteCnt++] = get_pv_min_span();
+		tmp = get_transducer_upper();
+		float_to_data(data,&tmp);
+		tmp = get_transducer_lower();
+		float_to_data(data,&tmp);
+		tmp = get_pv_min_span();
+		float_to_data(data,&tmp);
 	}
 }
 
@@ -563,7 +567,7 @@ void C47_WrPVTransferFunction(unsigned char *data)
 	{
 		dat = get_rx_data_pointer();
 		data[HrtByteCnt++] = *dat;
-		set_transfer_func(*dat);
+		set_transfer_func((enum transfer_func)(*dat));
 	}
 }
 
@@ -657,6 +661,7 @@ unsigned int cmd_function(unsigned char cmd,unsigned char *data)
 	unsigned char burst_cmd,is_burst_mode;
 	
 	is_burst_mode = get_burst_mode_code();
+	HrtByteCnt = 0;
 	
 	if(is_burst_mode)
 	{
@@ -665,7 +670,6 @@ unsigned int cmd_function(unsigned char cmd,unsigned char *data)
 		if(cmd == 109) //burst mode control : enter or exit burst mode.
 		{
 			command = C109_BurstModeControl;
-			return HrtByteCnt;	
 		}
 		switch(burst_cmd)
 		{
@@ -686,65 +690,66 @@ unsigned int cmd_function(unsigned char cmd,unsigned char *data)
 				command = C1_RdPV;		
 				break;
 		}
-		return HrtByteCnt;
 	}
-	
-	switch(cmd)
+	else
 	{
-		case 0: command = C0_RdUniqueId;		break;
-		case 1:	command = C1_RdPV;	  break;
-		case 2:	command = C2_RdLoopCurrPerOfRange;		break;
-		case 3:	command = C3_RdDVLoopCurr;		break;
-		case 4:			break;
-		case 5:			break;
-		case 6:	command = C6_WrPollingAddr;		break;
-		case 7:	command = C7_RdLoopConfiguration; 		break;
-		case 8:	command = C8_RdDVClass;		break;
-		case 9:			break;
-		case 10:		break;
-		case 11:		break;
-		case 12: command = C12_RdMessage;		break;
-		case 13: command = C13_RdTagDescriptorDate;		break;
-		case 14: command = C14_RdPVTransducerInfo;	break;
-		case 15: command = C15_RdDeviceInfo;	break;
-		case 16: command = C16_RdFinalAssemblyNum;	break;
-		case 17: command = C17_WrMessage;		break;
-		case 18: command = C18_WrTagDescriptorDate;		break;
-		case 19: command = C19_WrFinalAssemblyNum;		break;
-		case 20:		break;
-		case 21:		break;
-		case 22:		break;
-		case 23:    break;
-		case 24:		break;
-		case 25:		break;
-		case 26:		break;
-		case 27:		break;
-		case 28:		break;
-		case 29:    break;
-		case 30:    break;
-		case 31:    break;
-		case 32:    break;
-		case 33: command = C33_RdDeviceVariable;    break;
-		case 34: command = C34_WrPVDamping;		break;
-		case 35: command = C35_WrPVRange;		break;
-		case 36: command = C36_SetPVUpperRange;		break;
-		case 37: command = C37_SetPVLowerRange;		break;
-		case 40: command = C40_EnterOrExitFixedCurrent;		break;
-		case 41: command = C41_PerformSelfTest;		break;
-		case 42: command = C42_PerformDeviceReset;		break;
-		case 43: command = C43_PVZero;		break;
-		case 44: command = C44_WrPVUnit;		break;
-		case 45: command = C45_TrimLoopCurrentZero;		break;
-		case 46: command = C46_TrimLoopCurrentGain;		break;
-		case 47: command = C47_WrPVTransferFunction;		break;
-		case 49: command = C49_WrPVTransducerSerialNum;		break;
-		case 50: command = C50_RdDVAssignments;		break;
-		case 51: command = C51_WrDVAssignments;		break;
-		case 59: command = C59_WrNumOfResposePreambles;		break;
-		case 108: command = C108_WrBurstModeCmdNum;		break;
-		case 109: command = C109_BurstModeControl;		break;
-		default:
-			break;
+		switch(cmd)
+		{
+			case 0: command = C0_RdUniqueId;		break;
+			case 1:	command = C1_RdPV;	  break;
+			case 2:	command = C2_RdLoopCurrPerOfRange;		break;
+			case 3:	command = C3_RdDVLoopCurr;		break;
+			case 4:			break;
+			case 5:			break;
+			case 6:	command = C6_WrPollingAddr;		break;
+			case 7:	command = C7_RdLoopConfiguration; 		break;
+			case 8:	command = C8_RdDVClass;		break;
+			case 9:			break;
+			case 10:		break;
+			case 11:		break;
+			case 12: command = C12_RdMessage;		break;
+			case 13: command = C13_RdTagDescriptorDate;		break;
+			case 14: command = C14_RdPVTransducerInfo;	break;
+			case 15: command = C15_RdDeviceInfo;	break;
+			case 16: command = C16_RdFinalAssemblyNum;	break;
+			case 17: command = C17_WrMessage;		break;
+			case 18: command = C18_WrTagDescriptorDate;		break;
+			case 19: command = C19_WrFinalAssemblyNum;		break;
+			case 20:		break;
+			case 21:		break;
+			case 22:		break;
+			case 23:    break;
+			case 24:		break;
+			case 25:		break;
+			case 26:		break;
+			case 27:		break;
+			case 28:		break;
+			case 29:    break;
+			case 30:    break;
+			case 31:    break;
+			case 32:    break;
+			case 33: command = C33_RdDeviceVariable;    break;
+			case 34: command = C34_WrPVDamping;		break;
+			case 35: command = C35_WrPVRange;		break;
+			case 36: command = C36_SetPVUpperRange;		break;
+			case 37: command = C37_SetPVLowerRange;		break;
+			case 40: command = C40_EnterOrExitFixedCurrent;		break;
+			case 41: command = C41_PerformSelfTest;		break;
+			case 42: command = C42_PerformDeviceReset;		break;
+			case 43: command = C43_PVZero;		break;
+			case 44: command = C44_WrPVUnit;		break;
+			case 45: command = C45_TrimLoopCurrentZero;		break;
+			case 46: command = C46_TrimLoopCurrentGain;		break;
+			case 47: command = C47_WrPVTransferFunction;		break;
+			case 49: command = C49_WrPVTransducerSerialNum;		break;
+			case 50: command = C50_RdDVAssignments;		break;
+			case 51: command = C51_WrDVAssignments;		break;
+			case 59: command = C59_WrNumOfResposePreambles;		break;
+			case 108: command = C108_WrBurstModeCmdNum;		break;
+			case 109: command = C109_BurstModeControl;		break;
+			default:
+				break;
+		}
 	}
 	enter_critical_section( );
 	command(data);
@@ -754,44 +759,53 @@ unsigned int cmd_function(unsigned char cmd,unsigned char *data)
 
 void hart_appli_init(void)
 {
+// 	unsigned char dst_buf[6] = {
+// 		0x04,0x10,0x41,0x00,0x00,0x00
+// 	};
+	unsigned char buf[8] = { 8,1,18,20,20,5,19,20, };
+	unsigned char dst[6];
+	packed_ascii(buf,8,dst,6);
+	set_tag(dst);
+	
 	//serical init
 	serical_init(1200,8,HT_SERICAL_EVEN,1);
 	serical_enable(TRUE,FALSE);
 	//set default tx_preamble_num,tx_address_size
 	set_burst_mode_code(FALSE);
-	set_tx_addr_size(LONG_ADDR_SIZE);
+// 	set_tx_addr_size(LONG_ADDR_SIZE);
 	set_response_preamble_num(PREAMBLE_DEFAULT_NUM);
+	set_polling_addr(0);
 }
 
-void hart_appli_poll(void)
-{
-	unsigned char xmt_msg_type;
-	unsigned char hart_state;
-	
-	hart_state = get_hart_state();
-	
-	if(hart_state == HRT_PROCESS)
-	{
-		xmt_msg_type = get_xmt_msg_type();
-		switch(xmt_msg_type)
-		{
-			case XMT_BACK:
-			case XMT_ACK:
-				HrtResposeCode = 0x00;
-				HrtDeviceStatus = 0x00;
-				break;
-			case XMT_COMM_ERR:
-				HrtResposeCode = 0x88;
-				break;
-			default:
-				break;
-		}
-		frame_cmd_data(cmd_function);
-		set_tx_byte_count(HrtByteCnt);
-		hart_appli_completed_notify(TRUE);
-	}
-	hart_poll();	
-}
+// void hart_appli_poll(void)
+// {
+// 	unsigned char xmt_msg_type;
+// 	unsigned char hart_state;
+// 	
+// 	hart_state = get_hart_state();
+// 	
+// 	if(hart_state == HRT_PROCESS)
+// 	{
+// 		xmt_msg_type = get_xmt_msg_type();
+// 		switch(xmt_msg_type)
+// 		{
+// 			case XMT_BACK:
+// 			case XMT_ACK:
+// 				HrtResposeCode = 0x00;
+// 				HrtDeviceStatus = 0x00;
+// 				break;
+// 			case XMT_COMM_ERR:
+// 				HrtResposeCode = 0x88;
+// 				break;
+// 			default:
+// 				break;
+// 		}
+// 		frame_cmd_data(cmd_function);
+// 		set_tx_byte_count(HrtByteCnt);
+// 		hart_appli_completed_notify(TRUE);
+// 	}
+// 	hart_poll();	
+// }
 
 
 

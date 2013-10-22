@@ -3,5 +3,6 @@
 
 
 extern void hart_appli_init(void);
-extern void hart_appli_poll(void);
+// extern void hart_appli_poll(void);
+//extern unsigned int cmd_function(unsigned char cmd,unsigned char *data);
 #endif
