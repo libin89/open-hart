@@ -5,11 +5,11 @@
 // const unsigned char device_type;
 // const unsigned char unique_device_id[3];
 
-#define MANUFACTURER_ID  0x3A
-#define DEVICE_TYPE      0x15
-#define UNIQUE_DEVICE_ID0 0x17
-#define UNIQUE_DEVICE_ID1 0x3E
-#define UNIQUE_DEVICE_ID2 0xE1
+#define MANUFACTURER_ID  0x01
+#define DEVICE_TYPE      0x01
+#define UNIQUE_DEVICE_ID0 0x00
+#define UNIQUE_DEVICE_ID1 0x12
+#define UNIQUE_DEVICE_ID2 0x67
 
 enum {
 	PERCENT_UNIT = 57, // %

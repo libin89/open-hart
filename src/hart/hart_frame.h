@@ -10,11 +10,11 @@
 #define SLAVE_TIMER 1
 #define BT_TIMER    2
 
-#define HRT_STO       257 /* unit:ms, sto = 256.7ms */
-#define HRT_PRI_RT1   303 /* unit:ms,  = 302.5ms */
-#define HRT_SEC_RT1   376 /* unit:ms,  = 375.8ms */
-#define HRT_RT2       74  /* unit:ms,  = 73.3ms */
-#define HRT_GAPT      9  /* unit:ms,  = 9.2ms */
+#define HRT_STO       260 /* unit:ms, sto = 256.7ms */
+#define HRT_PRI_RT1   305 /* unit:ms,  = 302.5ms */
+#define HRT_SEC_RT1   380 /* unit:ms,  = 375.8ms */
+#define HRT_RT2       75  /* unit:ms,  = 73.3ms */
+#define HRT_GAPT      12  /* unit:ms,  = 9.2ms */
 
 #define PREAMBLE             0xFF
 #define PREAMBLE_DEFAULT_NUM 5

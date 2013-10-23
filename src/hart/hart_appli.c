@@ -21,11 +21,11 @@ void set_ID(unsigned char *data)
 	data[HrtByteCnt++] = MANUFACTURER_ID;
 	data[HrtByteCnt++] = DEVICE_TYPE;
 	data[HrtByteCnt++] = get_response_preamble_num();
-	data[HrtByteCnt++] = 6; //hart revision
-	data[HrtByteCnt++] = 0x00; //device revision level
-	data[HrtByteCnt++] = 120;  //software revision
-	data[HrtByteCnt++] = 0x02;
-	data[HrtByteCnt++] = 0x01; //flag assignment
+	data[HrtByteCnt++] = 5; //hart revision
+	data[HrtByteCnt++] = 10; //device revision level
+	data[HrtByteCnt++] = 10;  //software revision
+	data[HrtByteCnt++] = 0x08;
+	data[HrtByteCnt++] = 0; //flag assignment
 	data[HrtByteCnt++] = UNIQUE_DEVICE_ID0;
 	data[HrtByteCnt++] = UNIQUE_DEVICE_ID1;
 	data[HrtByteCnt++] = UNIQUE_DEVICE_ID2;
@@ -706,7 +706,7 @@ unsigned int cmd_function(unsigned char cmd,unsigned char *data)
 			case 8:	command = C8_RdDVClass;		break;
 			case 9:			break;
 			case 10:		break;
-			case 11:		break;
+			case 11: command = C0_RdUniqueId;		break;
 			case 12: command = C12_RdMessage;		break;
 			case 13: command = C13_RdTagDescriptorDate;		break;
 			case 14: command = C14_RdPVTransducerInfo;	break;
@@ -762,9 +762,9 @@ void hart_appli_init(void)
 // 	unsigned char dst_buf[6] = {
 // 		0x04,0x10,0x41,0x00,0x00,0x00
 // 	};
-	unsigned char buf[8] = { 8,1,18,20,20,5,19,20, };
+	unsigned char buf[] = "HARTTEST";
 	unsigned char dst[6];
-	packed_ascii(buf,8,dst,6);
+	packed_ascii(buf,sizeof(buf),dst,6);
 	set_tag(dst);
 	
 	//serical init

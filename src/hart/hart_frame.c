@@ -253,17 +253,26 @@ static unsigned char is_addr_match(void)
 	}
 	else
 	{
-		if( (long_addr.manufacturer_id == (g_Rx.data_buf[HRT_LONGF_ADDR_OFF]&0x3F)) && \
-				(long_addr.device_type == g_Rx.data_buf[HRT_LONGF_ADDR_OFF+1]) && \
-				(long_addr.unique_device_id[0] == g_Rx.data_buf[HRT_LONGF_ADDR_OFF+2]) && \
-				(long_addr.unique_device_id[1] == g_Rx.data_buf[HRT_LONGF_ADDR_OFF+3]) && \
-				(long_addr.unique_device_id[2] == g_Rx.data_buf[HRT_LONGF_ADDR_OFF+4]) )
+		if((!(g_Rx.data_buf[HRT_LONGF_ADDR_OFF]&0x7f)) && (!g_Rx.data_buf[HRT_LONGF_ADDR_OFF+1]) && \
+				(!g_Rx.data_buf[HRT_LONGF_ADDR_OFF+2]) && (!g_Rx.data_buf[HRT_LONGF_ADDR_OFF+2]) && \
+				(!g_Rx.data_buf[HRT_LONGF_ADDR_OFF+2]))
 		{
 			return TRUE;
 		}
 		else
 		{
-			return FALSE;
+			if( (long_addr.manufacturer_id == (g_Rx.data_buf[HRT_LONGF_ADDR_OFF]&0x3F)) && \
+				(long_addr.device_type == g_Rx.data_buf[HRT_LONGF_ADDR_OFF+1]) && \
+				(long_addr.unique_device_id[0] == g_Rx.data_buf[HRT_LONGF_ADDR_OFF+2]) && \
+				(long_addr.unique_device_id[1] == g_Rx.data_buf[HRT_LONGF_ADDR_OFF+3]) && \
+				(long_addr.unique_device_id[2] == g_Rx.data_buf[HRT_LONGF_ADDR_OFF+4]) )
+			{
+				return TRUE;
+			}
+			else
+			{
+				return FALSE;
+			}
 		}
 	}
 }

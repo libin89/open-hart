@@ -226,14 +226,15 @@ unsigned char packed_ascii(unsigned char* Src,unsigned int SrcLen,unsigned char*
     return FALSE;
   /* initialize destination with default values */
   for (e=0;e<SrcLen;e++)
-  { switch (e%3)
-    { case 0:
-        Dst[e] = 0x7d; break;
-      case 1:
-        Dst[e] = 0xf7; break;
-      case 2:
-        Dst[e] = 0xdf; break;
-    }
+  { 
+		if((Dst[e] >= 64) && (Dst[e] <= 95))
+		 {
+			 Dst[e] -= 64;
+		 }
+// 		 else if((Dst[e] >= 97) && (Dst[e] <= 122))
+// 		 {
+// 			 Dst[e] -= 96;
+// 		 }
   }
   DstLen = 0;
   while (SrcLen)
@@ -247,7 +248,7 @@ unsigned char packed_ascii(unsigned char* Src,unsigned int SrcLen,unsigned char*
     Dst[byDstIdx] &= 0xFC;
     Dst[byDstIdx] |= (Src[bySrcIdx+1] & 0x30) >> 4;
     Dst[byDstIdx+1] &= 0x0F;
-    Dst[byDstIdx+1] |= (Src[bySrcIdx] & 0x0F) << 4;
+    Dst[byDstIdx+1] |= (Src[bySrcIdx+1] & 0x0F) << 4;
     (DstLen)++;
     if (--SrcLen == 0)
       return TRUE;
