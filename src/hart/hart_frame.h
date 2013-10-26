@@ -14,7 +14,7 @@
 #define HRT_PRI_RT1   305 /* unit:ms,  = 302.5ms */
 #define HRT_SEC_RT1   380 /* unit:ms,  = 375.8ms */
 #define HRT_RT2       75  /* unit:ms,  = 73.3ms */
-#define HRT_GAPT      12  /* unit:ms,  = 9.2ms */
+#define HRT_GAPT      15  /* unit:ms,  = 9.2ms */
 
 #define PREAMBLE             0xFF
 #define PREAMBLE_DEFAULT_NUM 5

@@ -6,6 +6,7 @@
 unsigned int HrtByteCnt = 0;
 unsigned char HrtResposeCode = 0;
 unsigned char HrtDeviceStatus = 0;
+unsigned char HrtResposePos = 0;
 void (*command)(unsigned char *data);
 
 void set_respose_code(unsigned char *data)
@@ -151,6 +152,15 @@ void C8_RdDVClass(unsigned char *data)
 		data[HrtByteCnt++] = SV_CLASS;
 		data[HrtByteCnt++] = TV_CLASS;
 		data[HrtByteCnt++] = QV_CLASS;
+	}
+}
+
+void C11_RdUniqueIDWithTag(unsigned char *data)
+{
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		
 	}
 }
 
@@ -656,6 +666,23 @@ void C109_BurstModeControl(unsigned char *data)
 	}
 }
 
+void C200_WrTest(unsigned char *data)
+{
+	unsigned char *dat;
+	
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		dat = get_rx_data_pointer();
+// 		data[HrtByteCnt++] = *(dat);
+// 		data[HrtByteCnt++] = *(dat+1);
+// 		data[HrtByteCnt++] = *(dat+2);
+// 		data[HrtByteCnt++] = *(dat+3);
+		data[HrtByteCnt++] = 0x01;
+		data[HrtByteCnt++] = 0xC5;
+	}
+}
+
 unsigned int cmd_function(unsigned char cmd,unsigned char *data)
 {
 	unsigned char burst_cmd,is_burst_mode;
@@ -747,6 +774,7 @@ unsigned int cmd_function(unsigned char cmd,unsigned char *data)
 			case 59: command = C59_WrNumOfResposePreambles;		break;
 			case 108: command = C108_WrBurstModeCmdNum;		break;
 			case 109: command = C109_BurstModeControl;		break;
+			case 200: command = C200_WrTest;		break;
 			default:
 				break;
 		}

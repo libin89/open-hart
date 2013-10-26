@@ -88,7 +88,7 @@ void set_message(unsigned char *msg)
 	unsigned char i = 0;
 	for(i = 0;i < 24;i++)
 	{
-		para.Msg[i] = *(msg+1);
+		para.Msg[i] = *(msg+i);
 	}
 }
 unsigned char *get_message(void) { return para.Msg; }

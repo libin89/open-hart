@@ -146,7 +146,6 @@ void USART3_IRQHandler(void)
 	{
 		hart_xmt_msg();
 	}
-	
 }
 
 void
