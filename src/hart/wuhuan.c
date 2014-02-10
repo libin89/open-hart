@@ -35,11 +35,16 @@ struct parameter
 	unsigned char ResposePreambleNum;
 	unsigned char BurstModeCmdNum;
 	unsigned char BurstModeCode;
+	unsigned char ConfigChangeFlag; //configuration change flag
+	unsigned char ExtendedDeviceStatus;
+	unsigned char DeviceOperatingMode;
+	unsigned char Standardized_status_0;
 	unsigned char Msg[24];  //packed
 	unsigned char Tag[6];   //packed
 	unsigned char Dscp[12];  //descriptor , packed
 	unsigned char Date[3];  //date : day/month/year
 	unsigned char Tsn[3];  //transducer serial number
+	unsigned char Dss[6];  //device specific status
 	float TransducerUpper;  //PV transducer unit code is the same as PV_UNIT
 	float TransducerLower;
 	float PVMinSpan;
@@ -188,15 +193,15 @@ void set_tv_code(unsigned char tv_code) { para.TVCode = tv_code; }
 unsigned char get_tv_code(void) { return para.TVCode; }
 void set_qv_code(unsigned char qv_code) { para.QVCode = qv_code; }
 unsigned char get_qv_code(void) { return para.QVCode; }
-// /* externally trim current zero */
-// void set_ext_zero_current(float ext_zero_curr) { para.ExtMeasuredZeroCurr = ext_zero_curr; }
-// float get_ext_zero_current(void) { return para.ExtMeasuredZeroCurr; }
+/* externally trim current zero */
+void set_ext_zero_current(float ext_zero_curr) { para.ExtMeasuredZeroCurr = ext_zero_curr; }
+float get_ext_zero_current(void) { return para.ExtMeasuredZeroCurr; }
 /* actual trim current zero */
 void set_act_zero_current(float act_zero_curr) { para.ActMeasuredZeroCurr = act_zero_curr; }
 float get_act_zero_current(void) { return para.ActMeasuredZeroCurr; }
-// /* externally trim current gain */
-// void set_ext_gain_current(float ext_gain_current) { para.ExtMeasuredGainCurr = ext_gain_current; }
-// float get_ext_gain_current(void) { return para.ExtMeasuredGainCurr; }
+/* externally trim current gain */
+void set_ext_gain_current(float ext_gain_current) { para.ExtMeasuredGainCurr = ext_gain_current; }
+float get_ext_gain_current(void) { return para.ExtMeasuredGainCurr; }
 /* actual trim current gain */
 void set_act_gain_current(float act_gain_current) { para.ActMeasuredGainCurr = act_gain_current; }
 float get_act_gain_current(void) { return para.ActMeasuredGainCurr; }
@@ -214,6 +219,29 @@ unsigned char get_burst_mode_cmd_num(void) { return para.BurstModeCmdNum; }
 /* burst mode control code */
 void set_burst_mode_code(unsigned char bt_code) { para.BurstModeCode = bt_code; }
 unsigned char get_burst_mode_code(void) { return para.BurstModeCode; }
+/* configuration change flag */
+void set_config_change_flag(unsigned char cfg_change_flag) { para.ConfigChangeFlag = cfg_change_flag; }
+unsigned char get_config_change_flag(void) { return para.ConfigChangeFlag; }
+/* device specific status */
+void set_device_specific_status(unsigned char *dss)
+{
+	unsigned char i;
+	
+	for(i = 0;i < 6;i++)
+	{
+		para.Dss[i] = *(dss+i);
+	}
+}
+unsigned char *get_device_specific_status(void) { return para.Dss; } 
+/* extended device status */
+void set_extended_device_status(unsigned char status) { para.ExtendedDeviceStatus = status; }
+unsigned char get_extended_device_status(void) { return para.ExtendedDeviceStatus; }
+/* device operating mode */
+void set_device_operating_mode(unsigned char mode) { para.DeviceOperatingMode = mode; }
+unsigned char get_device_operating_mode(void) { return para.DeviceOperatingMode; }
+/* standardized status 0 */
+void set_std_status_0(unsigned char status_0) { para.Standardized_status_0 = status_0; }
+unsigned char get_std_status_0(void) { return para.Standardized_status_0; }
 
 unsigned char packed_ascii(unsigned char* Src,unsigned int SrcLen,unsigned char* Dst,unsigned int DstLen)
 { /* Convert from visible string (8 bit format) into packed ascii

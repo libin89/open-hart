@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "hart_appli.h"
 #include "soft_timer.h"
-#include "stm32f10x.h"
+#include "hart_driver.h"
 #define SystemFrequency 72000000u
 #define TicksPerSecond 1000u
 

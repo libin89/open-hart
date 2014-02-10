@@ -23,9 +23,9 @@ void set_ID(unsigned char *data)
 	data[HrtByteCnt++] = DEVICE_TYPE;
 	data[HrtByteCnt++] = get_response_preamble_num();
 	data[HrtByteCnt++] = 5; //hart revision
-	data[HrtByteCnt++] = 10; //device revision level
-	data[HrtByteCnt++] = 10;  //software revision
-	data[HrtByteCnt++] = 0x08;
+	data[HrtByteCnt++] = 5; //device revision level
+	data[HrtByteCnt++] = 2;  //software revision
+	data[HrtByteCnt++] = 0x20;
 	data[HrtByteCnt++] = 0; //flag assignment
 	data[HrtByteCnt++] = UNIQUE_DEVICE_ID0;
 	data[HrtByteCnt++] = UNIQUE_DEVICE_ID1;
@@ -33,12 +33,18 @@ void set_ID(unsigned char *data)
 	//the 12th data byte?
 }
 
+static void config_change(void)
+{
+	HrtDeviceStatus |= 0x40;
+	set_config_change_flag(0xC0);
+}
+
 static void float_to_data(unsigned char *data,float *tmp)
 {
-	data[HrtByteCnt++] = *((unsigned char *)tmp);
-	data[HrtByteCnt++] = *((unsigned char *)tmp+1);
-	data[HrtByteCnt++] = *((unsigned char *)tmp+2);
 	data[HrtByteCnt++] = *((unsigned char *)tmp+3);
+	data[HrtByteCnt++] = *((unsigned char *)tmp+2);
+	data[HrtByteCnt++] = *((unsigned char *)tmp+1);
+	data[HrtByteCnt++] = *((unsigned char *)tmp);
 }
 
 static float data_to_float(unsigned char *tmp)
@@ -51,7 +57,7 @@ static float data_to_float(unsigned char *tmp)
 	
 	for(i = 0;i < 4;i++)
 	{
-		U.buf[i] = *(tmp+i);
+		U.buf[i] = *((unsigned char *)tmp+3-i);
 	}
 	return U.tmp_f;
 }
@@ -283,8 +289,8 @@ void C17_WrMessage(unsigned char *data)
 			data[HrtByteCnt++] = *(dat+i);
 		}
 		set_message(dat);
+		config_change();
 	}
-	
 }
 
 void C18_WrTagDescriptorDate(unsigned char *data)
@@ -303,6 +309,7 @@ void C18_WrTagDescriptorDate(unsigned char *data)
 		set_tag(dat);
 		set_descriptor(dat+6);
 		set_date(dat+18);
+		config_change();
 	}
 	
 }
@@ -321,6 +328,7 @@ void C19_WrFinalAssemblyNum(unsigned char *data)
 			data[HrtByteCnt++] = *(dat+i);
 		}
 		set_final_assembly_num(dat);
+		config_change();
 	}
 	
 }
@@ -400,8 +408,8 @@ void C34_WrPVDamping(unsigned char *data)
 		tmp = data_to_float(dat);
 		float_to_data(data,&tmp);
 		set_pv_damping_time(tmp);
+		config_change();
 	}
-	
 }
 
 void C35_WrPVRange(unsigned char *data)
@@ -421,6 +429,7 @@ void C35_WrPVRange(unsigned char *data)
 		set_ul_range_unit(*dat);
 		set_pv_upper_range(tmp1);
 		set_pv_lower_range(tmp2);
+		config_change();
 	}
 	
 }
@@ -434,6 +443,7 @@ void C36_SetPVUpperRange(unsigned char *data)
 	{
 		tmp = get_pv();
 		set_pv_upper_range(tmp);
+		config_change();
 	}	
 }
 
@@ -446,6 +456,24 @@ void C37_SetPVLowerRange(unsigned char *data)
 	{
 		tmp = get_pv();
 		set_pv_lower_range(tmp);
+		config_change();
+	}
+}
+
+void C38_ResetCfgChangeFlag(unsigned char *data)
+{
+	set_respose_code(data);
+	if(!HrtResposeCode)
+	{
+		HrtDeviceStatus &= ~0x40;
+		if(get_host_type())
+		{
+			set_config_change_flag(0x80); //primary 
+		}
+		else
+		{
+			set_config_change_flag(0x40);  //second
+		}
 	}
 }
 
@@ -511,6 +539,7 @@ void C44_WrPVUnit(unsigned char *data)
 		dat = get_rx_data_pointer();
 		data[HrtByteCnt++] = *dat;
 		set_pv_unit(*dat);
+		config_change();
 	}
 }
 
@@ -529,7 +558,7 @@ void C45_TrimLoopCurrentZero(unsigned char *data)
 			dat = get_rx_data_pointer();
 			tmp = data_to_float(dat);
 			func = (TrimLoopCurrent)get_zero_trim_ptr();
-			func(&tmp);
+			func(&tmp);   //
 			tmp = get_act_zero_current();
 			float_to_data(data,&tmp);	
 		}
@@ -578,6 +607,25 @@ void C47_WrPVTransferFunction(unsigned char *data)
 		dat = get_rx_data_pointer();
 		data[HrtByteCnt++] = *dat;
 		set_transfer_func((enum transfer_func)(*dat));
+		config_change();
+	}
+}
+
+void C48_RdAdditionalDeviceStatus(unsigned char *data)
+{
+	unsigned char i;
+	unsigned char *dat;
+	
+	if(!HrtResposeCode)
+	{
+		dat = get_device_specific_status();
+		for(i = 0;i < 6;i++)
+		{
+				data[HrtByteCnt++] = *(dat+i);
+		}
+		data[HrtByteCnt++] = get_extended_device_status();
+		data[HrtByteCnt++] = get_device_operating_mode();
+		data[HrtByteCnt++] = get_std_status_0();
 	}
 }
 
@@ -593,6 +641,7 @@ void C49_WrPVTransducerSerialNum(unsigned char *data)
 		data[HrtByteCnt++] = *(dat+1);
 		data[HrtByteCnt++] = *(dat+2);
 		set_transducer_serial_num(dat);
+		config_change();
 	}
 }
 
@@ -624,6 +673,7 @@ void C51_WrDVAssignments(unsigned char *data)
 		set_sv_code(*(dat+1));
 		set_tv_code(*(dat+2));
 		set_qv_code(*(dat+3));
+		config_change();
 	}
 }
 
@@ -637,6 +687,7 @@ void C59_WrNumOfResposePreambles(unsigned char *data)
 		dat = get_rx_data_pointer();
 		data[HrtByteCnt++] = *dat;
 		set_response_preamble_num(*dat);
+		config_change();
 	}
 }
 
@@ -650,6 +701,7 @@ void C108_WrBurstModeCmdNum(unsigned char *data) //command 1,2,3,9 should be sup
 		dat = get_rx_data_pointer();
 		data[HrtByteCnt++] = *dat;
 		set_burst_mode_cmd_num(*dat);
+		config_change();
 	}
 }
 
@@ -674,12 +726,10 @@ void C200_WrTest(unsigned char *data)
 	if(!HrtResposeCode)
 	{
 		dat = get_rx_data_pointer();
-// 		data[HrtByteCnt++] = *(dat);
-// 		data[HrtByteCnt++] = *(dat+1);
-// 		data[HrtByteCnt++] = *(dat+2);
-// 		data[HrtByteCnt++] = *(dat+3);
-		data[HrtByteCnt++] = 0x01;
-		data[HrtByteCnt++] = 0xC5;
+		data[HrtByteCnt++] = *(dat);
+		data[HrtByteCnt++] = *(dat+1);
+		data[HrtByteCnt++] = *(dat+2);
+		data[HrtByteCnt++] = *(dat+3);
 	}
 }
 
@@ -760,6 +810,7 @@ unsigned int cmd_function(unsigned char cmd,unsigned char *data)
 			case 35: command = C35_WrPVRange;		break;
 			case 36: command = C36_SetPVUpperRange;		break;
 			case 37: command = C37_SetPVLowerRange;		break;
+			case 38: command = C38_ResetCfgChangeFlag;		break;
 			case 40: command = C40_EnterOrExitFixedCurrent;		break;
 			case 41: command = C41_PerformSelfTest;		break;
 			case 42: command = C42_PerformDeviceReset;		break;
@@ -768,6 +819,7 @@ unsigned int cmd_function(unsigned char cmd,unsigned char *data)
 			case 45: command = C45_TrimLoopCurrentZero;		break;
 			case 46: command = C46_TrimLoopCurrentGain;		break;
 			case 47: command = C47_WrPVTransferFunction;		break;
+			case 48: command = C48_RdAdditionalDeviceStatus;		break;
 			case 49: command = C49_WrPVTransducerSerialNum;		break;
 			case 50: command = C50_RdDVAssignments;		break;
 			case 51: command = C51_WrDVAssignments;		break;
@@ -796,13 +848,19 @@ void hart_appli_init(void)
 	set_tag(dst);
 	
 	//serical init
-	serical_init(1200,8,HT_SERICAL_EVEN,1);
-	serical_enable(TRUE,FALSE);
-	//set default tx_preamble_num,tx_address_size
+	serial_init(1200,8,HT_SERICAL_EVEN,1);
+	_SerialReceiveMsg = hart_rcv_msg;
+	_SerialSendMsg = hart_xmt_msg;
+	serial_enable(TRUE,FALSE);
 	set_burst_mode_code(FALSE);
-// 	set_tx_addr_size(LONG_ADDR_SIZE);
 	set_response_preamble_num(PREAMBLE_DEFAULT_NUM);
 	set_polling_addr(0);
+	set_extended_device_status(MAINTANANCE_REQUIRED);
+	set_std_status_0(NON_VOLATILE_MEMORY_DEFECT);
+	//set_loop_current(4.0f);
+// 	typedef void (*PerformSelfTest)(void);
+//   typedef void (*PerformDeviceReset)(void);
+//   typedef void (*TrimLoopCurrent)(void *data); ///////////////??????????????
 }
 
 // void hart_appli_poll(void)

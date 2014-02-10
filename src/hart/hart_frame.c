@@ -103,7 +103,7 @@ extern void hart_poll(void)
 			s_XmtPreambleNum = get_response_preamble_num();
 			s_XmtBufferCnt = g_Tx.address_size + 3 + g_Tx.byte_count + 1;
 			pXmtBufferCur = g_Tx.data_buf;
-			serical_enable(FALSE,TRUE);
+			serial_enable(FALSE,TRUE);
 		}
 	}
 }
@@ -167,6 +167,10 @@ extern unsigned char get_hart_state(void)
 // {
 // 	return hrt_respose_code;
 // }
+extern unsigned char get_host_type(void)
+{
+	return (g_Rx.data_buf[1] & 0x80);
+}
 
 extern void set_data_link(void)
 {
@@ -189,6 +193,14 @@ extern void set_data_link(void)
 	else
 	{
 		g_Tx.delimiter = 0x06;
+		if(g_Rx.data_buf[1] & 0x80)
+		{
+			g_Host = PRIMARY_MASETER;
+		}
+		else
+		{
+			g_Host = SECONDARY_MASTER;
+		}
 	}
 	if(g_Tx.address_size == LONG_ADDR_SIZE)
 	{
@@ -335,7 +347,7 @@ void hart_rcv_msg(void)
 	static unsigned int ByteCount;
 	unsigned char Byte;
 		
-	serical_get_byte(&Byte);
+	serial_get_byte(&Byte);
 	switch(g_RcvState)
 	{
 		case RCV_WAIT_IDLE:
@@ -494,7 +506,7 @@ void hart_rcv_msg(void)
 				PreambleNum = 0;
 				ByteCount = 0;
 				set_rcv_frame_count();
-				serical_enable(FALSE,FALSE);
+				serial_enable(FALSE,FALSE);
 			}
 			break;
 		default:
@@ -517,14 +529,14 @@ void hart_xmt_msg(void)
 			case XMT_WRITE:
 				if(s_XmtPreambleNum != 0)
 				{
-					serical_put_byte(PREAMBLE);
+					serial_put_byte(PREAMBLE);
 					s_XmtPreambleNum--;
 				}
 				else
 				{
 					if(s_XmtBufferCnt != 0)
 					{
-						serical_put_byte(*pXmtBufferCur);
+						serial_put_byte(*pXmtBufferCur);
 						pXmtBufferCur++;
 						s_XmtBufferCnt--;
 					}
@@ -535,7 +547,7 @@ void hart_xmt_msg(void)
 				}
 				if(g_XmtState == XMT_DONE)
 				{
-					serical_enable(TRUE,FALSE);
+					serial_enable(TRUE,FALSE);
 					g_XmtState = XMT_INIT;
 				}
 				break;

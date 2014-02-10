@@ -1,10 +1,11 @@
 #include "hart_driver.h"
-#include "hart_frame.h"
 
 // extern void hart_proxy_dequeue(void);
 // extern void hart_proxy_enqueue(void);
+void (*_SerialReceiveMsg)(void);
+void (*_SerialSendMsg)(void);
 
-unsigned char serical_init(unsigned int baud, 
+unsigned char serial_init(unsigned int baud, 
 																	unsigned char data_bit, 
 																	parity_type parity, 
 																	unsigned char stop_bit)
@@ -102,7 +103,7 @@ unsigned char serical_init(unsigned int baud,
 	return initialized;
 }
 
-void serical_enable(unsigned char rx_enable, unsigned char tx_enable)
+void serial_enable(unsigned char rx_enable, unsigned char tx_enable)
 {
 		enter_critical_section( );
     if( rx_enable )
@@ -124,13 +125,13 @@ void serical_enable(unsigned char rx_enable, unsigned char tx_enable)
     exit_critical_section( );
 }
 
-unsigned char serical_put_byte(unsigned char byte)
+unsigned char serial_put_byte(unsigned char byte)
 {
 	USART_SendData(USART3, byte);
 	return TRUE;
 }
 
-unsigned char serical_get_byte(unsigned char *byte)
+unsigned char serial_get_byte(unsigned char *byte)
 {
 	*byte = (u8)USART_ReceiveData(USART3);
 	return TRUE;
@@ -140,11 +141,11 @@ void USART3_IRQHandler(void)
 {
 	if(USART_GetITStatus(USART3,USART_IT_RXNE))
 	{
-		hart_rcv_msg();
+		_SerialReceiveMsg();
 	}
 	else if(USART_GetITStatus(USART3,USART_IT_TXE))
 	{
-		hart_xmt_msg();
+		_SerialSendMsg();
 	}
 }
 

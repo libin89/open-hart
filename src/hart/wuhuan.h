@@ -5,11 +5,11 @@
 // const unsigned char device_type;
 // const unsigned char unique_device_id[3];
 
-#define MANUFACTURER_ID  0x26
-#define DEVICE_TYPE      0x43
-#define UNIQUE_DEVICE_ID0 0x00
-#define UNIQUE_DEVICE_ID1 0x12
-#define UNIQUE_DEVICE_ID2 0x67
+#define MANUFACTURER_ID   0x26
+#define DEVICE_TYPE       0x7C
+#define UNIQUE_DEVICE_ID0 0x40
+#define UNIQUE_DEVICE_ID1 0x35
+#define UNIQUE_DEVICE_ID2 0x8f
 
 enum {
 	PERCENT_UNIT = 57, // %
@@ -64,6 +64,22 @@ enum burst_mode{
 
 enum analog_channel{
 	CHANNEL_FLAG = 0x01,
+};
+
+enum standardized_status_0{
+	SIMULATION_ACTIVE             = 0x01,
+	NON_VOLATILE_MEMORY_DEFECT    = 0x02,
+	VOLATILE_MEMORY_DEFECT        = 0x04,
+	WATCHDOG_RESET_EXECUTE        = 0x08,
+	VOTAGE_OUT_OF_RANGE           = 0x10,
+	ENVIRONMENTAL_OUT_OF_RANGE    = 0x20,
+	ELECTRONIC_DEFECT             = 0x40,
+};
+
+enum extended_device_status{
+	MAINTANANCE_REQUIRED         = 0x01,
+	DEVICE_VARIABLE_ALERT        = 0x02,
+	CRITICAL_POWER_FAILURE       = 0x04,
 };
 
 typedef void (*PerformSelfTest)(void);
@@ -159,15 +175,15 @@ void set_tv_code(unsigned char tv_code);
 unsigned char get_tv_code(void);
 void set_qv_code(unsigned char qv_code);
 unsigned char get_qv_code(void);
-// /* externally trim current zero */
-// extern void set_ext_zero_current(float ext_zero_curr);
-// extern float get_ext_zero_current(void);
+/* externally trim current zero */
+extern void set_ext_zero_current(float ext_zero_curr);
+extern float get_ext_zero_current(void);
 /* actual trim current zero */
 extern void set_act_zero_current(float act_zero_curr);
 extern float get_act_zero_current(void);
-// /* externally trim current gain */
-// extern void set_ext_gain_current(float ext_gain_current);
-// extern float get_ext_gain_current(void);
+/* externally trim current gain */
+extern void set_ext_gain_current(float ext_gain_current);
+extern float get_ext_gain_current(void);
 /* actual trim current gain */
 extern void set_act_gain_current(float act_gain_current);
 extern float get_act_gain_current(void);
@@ -185,8 +201,26 @@ extern unsigned char get_burst_mode_cmd_num(void);
 /* burst mode control code */
 extern void set_burst_mode_code(unsigned char bt_code);
 extern unsigned char get_burst_mode_code(void);
+/* configuration change flag */
+extern void set_config_change_flag(unsigned char cfg_change_flag);
+extern unsigned char get_config_change_flag(void);
+/* device specific status */
+extern void set_device_specific_status(unsigned char *dss);
+extern unsigned char *get_device_specific_status(void);
+/* extended device status */
+extern void set_extended_device_status(unsigned char status);
+extern unsigned char get_extended_device_status(void);
+/* device operating mode */
+extern void set_device_operating_mode(unsigned char mode);
+extern unsigned char get_device_operating_mode(void);
+/* standardized status 0 */
+extern void set_std_status_0(unsigned char status_0);
+extern unsigned char get_std_status_0(void);
+
 
 extern unsigned char packed_ascii(unsigned char* Src,unsigned int SrcLen,unsigned char* Dst,unsigned int DstLen);
 extern unsigned char unpacked_ascii(unsigned char* Src,unsigned int SrcLen,unsigned char *Dst,unsigned int DstLen);
+
+
 
 #endif

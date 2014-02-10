@@ -10,7 +10,7 @@ unsigned char timer_init(unsigned int time_100us)
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
   /* Time base configuration */
   TIM_TimeBaseStructure.TIM_Period = time_100us;    	
-  TIM_TimeBaseStructure.TIM_Prescaler = (SYSCLK_FREQUENCY/TICKS_SECOND)-1;					    //预分频值
+  TIM_TimeBaseStructure.TIM_Prescaler = (SYSCLK_FREQUENCY/TICKS_SECOND)-1;	//预分频值
   TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;		//时钟分割
   TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Down;	//TIM向下计数模式
   TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);

@@ -167,6 +167,7 @@ extern unsigned char *get_rx_data_pointer(void);
 // extern void set_tx_byte_count(unsigned int byte_count);
 extern unsigned char get_hart_state(void);
 // extern void hart_appli_completed_notify(unsigned char flg);
+extern unsigned char get_host_type(void);
 
 
 extern void set_data_link(void);
